@@ -1,0 +1,51 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# --- Secrets / local config ---
+.env
+*.token
+*.key
+!**/id_*.pub
+secrets/
+
+# --- Model weights, caches, large artifacts (never commit) ---
+weights/
+models/
+*.params
+*.npz
+checkpoints/
+.cache/
+*.ckpt
+
+# --- Raw / processed large data: keep manifests, ignore bulky files ---
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/*.manifest.json
+data/processed/*
+!data/processed/.gitkeep
+data/inbox/*
+!data/inbox/.gitkeep
+data/external/
+
+# --- Run outputs: keep CSVs/reports, ignore bulky trajectories/structures ---
+results/**/trajectories/
+results/**/*.traj
+results/**/raw_predictions/
+*.pdb
+*.cif
+*.mmcif
+!submission/structures/.gitkeep
+
+# --- OS / IDE noise ---
+.DS_Store
+*.swp
+.idea/
+
+# --- Colab / Drive local leftovers ---
+*.ipynb_checkpoints

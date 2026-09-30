@@ -1,0 +1,67 @@
+{
+  "schema_note": "Machine-readable competition constraints verified from official pages on 2026-09-30. Source quotes in reports/competition_rules.md and reports/sources_register.md.",
+  "competition": "Anthropic x Adaptyv Protein Design Competition 2026 - Challenge 01 EGFR",
+  "track": 3,
+  "verified_date_utc": "2026-09-30",
+  "sources": {
+    "competition_page": "https://proteinbase.com/competitions/anthropic-adaptyv-2026",
+    "challenge_page": "https://proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/egfr",
+    "terms": "https://proteinbase.com/competitions/anthropic-adaptyv-2026/terms",
+    "submission_portal": "https://proteinbase.com/competitions/anthropic-adaptyv-2026/submit"
+  },
+  "submission": {
+    "max_designs_track1": 40,
+    "min_designs_track1": 20,
+    "max_designs_track2_3": 20,
+    "min_designs_track2_3": null,
+    "single_chain_length_min": 10,
+    "single_chain_length_max": 250,
+    "minibinder_category_inclusive": [40, 100],
+    "formats_allowed": ["single chain protein", "nanobody", "scFv", "Fab"],
+    "molecule_class_allowed": ["protein", "nanobody", "scfv", "fab_kappa", "fab_lambda"],
+    "fab_separator": ":",
+    "csv_required_columns": ["name", "sequence", "molecule_class"],
+    "csv_ordering": "ordered by submitter ranking, top row = highest rank",
+    "design_requirement": "de novo and zero-shot; no existing binder used as starting point; adequate sequence AND structural diversity from known proteins",
+    "deadline_challenge_page_local": "2026-10-04 23:59 AoE (UTC-12)",
+    "deadline_challenge_page_utc": "2026-10-05 11:59 UTC",
+    "internal_target_europe_berlin": "2026-10-04 18:00 Europe/Berlin",
+    "note_terms_discrepancy": "Official Terms section 5.3 lists a generic competition-wide 'final design submission deadline October 31, 2026'; the challenge page and FAQ govern Challenge 1: October 4, 23:59 AoE. Re-verify before final submission."
+  },
+  "targets": {
+    "human": {
+      "uniprot_isoform": "P00533-1",
+      "uniprot_url": "https://www.uniprot.org/uniprotkb/P00533/entry",
+      "ecd_residues_uniprot": [25, 645],
+      "ecd_length_aa": 621,
+      "recommended_epitope": "Domain III (functional epitope; cetuximab/panitumumab region)",
+      "structure_reference": "RCSB 6ARU, chain A",
+      "structure_url": "https://www.rcsb.org/structure/6ARU"
+    },
+    "mouse": {
+      "uniprot_isoform": null,
+      "uniprot_url": null,
+      "ecd_residues_uniprot": null,
+      "ecd_length_aa": null,
+      "recommended_epitope": null,
+      "structure_reference": null,
+      "blocker": "Mouse EGFR tab rendered no data (empty client-rendered panel) on 2026-09-30 even in interactive browser. Official mouse construct/boundaries MUST come from organizers; do NOT copy human 25-645 slice or assume Q01279 isoform. See HUMAN_ACTIONS.md A2."
+    }
+  },
+  "objectives_ranked_by_organizers": [
+    "1: pH-selective binding to human EGFR (bind at pH 6.5, no detectable binding at pH 7.4)",
+    "2: mouse cross-reactivity (same sequence vs human and mouse EGFR; mouse assay conditions not fully specified on page)",
+    "3: binding affinity vs human EGFR full extracellular region"
+  ],
+  "selection": {
+    "expected_screened_per_problem": 1500,
+    "track_share": "50% Track1 / 25% Track2 / 25% Track3",
+    "track2_3_pool_selection": "~375 per problem chosen by a pre-written Claude-based workflow using submitted information; no guaranteed allocation",
+    "hard_filters": "length/class rules, uniqueness, de novo + zero-shot diversity"
+  },
+  "publication": {
+    "results_license": "ODC-BY on Proteinbase (tested designs and designs in public Collections)",
+    "ownership": "Participants retain ownership; submission grants non-exclusive perpetual license for publication",
+    "prompt_injection_note": "Embedded instructions / prompt injection in submitted data may be grounds for disqualification"
+  }
+}

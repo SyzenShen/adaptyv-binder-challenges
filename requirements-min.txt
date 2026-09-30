@@ -1,0 +1,8 @@
+# Minimal LOCAL (CPU-only) analysis environment - installed into project .venv only.
+# Heavy GPU tools (BindCraft / Boltz) live in separate cloud environments, never here.
+# Upper bounds kept loose on purpose; lock exact versions after phase 1 smoke use.
+biopython>=1.83,<2
+pandas>=2.0,<3
+PyYAML>=6.0,<7
+requests>=2.31,<3
+pytest>=8.0,<9

@@ -1,0 +1,34 @@
+# Compute & spend budget for the EGFR challenge project.
+# Updated only with real, approved values. paid_budget=0 until explicit user authorization.
+
+paid_budget_usd: 0
+budget_status: none_approved   # any paid subscription / API / GPU instance requires explicit approval
+last_reviewed_utc: "2026-09-30"
+
+local_machine:
+  role: cpu_analysis_and_git_writer
+  os: "macOS 15.6 (24G84), x86_64"
+  cpu: "Intel Core i7-9750H, 6P/12T"
+  ram_gb: 32
+  gpu_usable_for_cuda: false   # AMD Radeon Pro 5300M 4GB + Intel UHD 630; no CUDA, not used for models
+  disk_free_gb_measured: 27.5  # tight; keep weights/caches off local disk
+
+cloud:
+  primary_plan: google_colab_free_tier
+  colab_known_limits:
+    - "GPU access is best-effort and may be revoked anytime without warning (official FAQ, accessed 2026-09-30)"
+    - "idle timeout and VM lifetime caps exist but are not published and vary over time"
+    - "no SSH tunnels, proxies, keep-alive abuse or multi-account circumvention"
+    - "persist stage outputs to Google Drive; runtime disk is ephemeral"
+  paid_upgrade: blocked_without_approval
+  fallback_if_colab_insufficient: "write one-page compute request (VRAM, throughput, GPU-hours, current rates, cap, stop rules) for user approval"
+
+batch_planning:
+  production_batch_size: null        # set after smoke-test throughput is measured (phase 2)
+  binder_lengths_aa: [40, 100]       # official minibinder category; fixed short list to reduce recompiles
+  reserve_for_dual_species: true     # reserve GPU budget for human+mouse re-prediction (phase 4)
+
+stop_rules:
+  - "Two well-founded install attempts fail -> report blocker, do not random-patch dependencies"
+  - "OOM -> only documented concurrency/precision/memory reductions; crop changes return to confirmation point A"
+  - "Do not relax scientific thresholds to force candidates through"
