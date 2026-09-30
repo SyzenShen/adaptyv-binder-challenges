@@ -27,8 +27,12 @@ checkpoints/
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/*.manifest.json
+!data/raw/*.fasta
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/*.csv
+!data/processed/*.json
+!data/processed/*.fasta
 data/inbox/*
 !data/inbox/.gitkeep
 data/external/

@@ -1,0 +1,104 @@
+{
+  "inputs": {
+    "uniprot_fasta": "data/raw/P00533.fasta",
+    "mmcif": "data/raw/6ARU.cif",
+    "hashes": "data/raw/targets.manifest.json"
+  },
+  "competition_construct": {
+    "uniprot_begin": 25,
+    "uniprot_end": 645,
+    "length": 621
+  },
+  "pdb": {
+    "id": "6ARU",
+    "auth_chain": "A",
+    "label_asym": "A",
+    "struct_ref_seq_span": {
+      "seq_align_beg": 1,
+      "seq_align_end": 616,
+      "db_align_beg": 25,
+      "db_align_end": 640,
+      "offset_uniprot_minus_label": 24
+    },
+    "differences": {
+      "516": {
+        "pdb_mon": "LYS",
+        "db_mon": "ASN",
+        "db_pos": "540",
+        "details": "conflict"
+      },
+      "610": {
+        "pdb_mon": "ARG",
+        "db_mon": "GLU",
+        "db_pos": "634",
+        "details": "conflict"
+      },
+      "617": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      },
+      "618": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      },
+      "619": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      },
+      "620": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      },
+      "621": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      },
+      "622": {
+        "pdb_mon": "HIS",
+        "db_mon": "?",
+        "db_pos": "?",
+        "details": "expression tag"
+      }
+    },
+    "expression_tag_labels": [
+      617,
+      618,
+      619,
+      620,
+      621,
+      622
+    ],
+    "residues_with_coordinates": 609,
+    "missing_in_density_uniprot": [
+      25,
+      26,
+      27,
+      637,
+      638,
+      639,
+      640,
+      641,
+      642,
+      643,
+      644,
+      645
+    ],
+    "glycan_links_uniprot": {
+      "352": "D",
+      "361": "F",
+      "413": "G",
+      "444": "E"
+    }
+  },
+  "rows": 621
+}

@@ -1,0 +1,24 @@
+{
+  "status": "PROVISIONAL - mouse official construct unknown (A2 pending); aligned against full-length Q01279 canonical sequence",
+  "checked_at_utc": "2026-09-30T18:39:34+00:00",
+  "params": {
+    "matrix": "BLOSUM62",
+    "mode": "global",
+    "open_gap_score": -10.0,
+    "extend_gap_score": -0.5
+  },
+  "human_construct": "P00533-1 25..645",
+  "mouse_reference": "Q01279 full length",
+  "mouse_aligned_span": [
+    1,
+    1210
+  ],
+  "alignment_score": 2788.0,
+  "class_counts": {
+    "identical": 551,
+    "conservative": 35,
+    "nonconservative": 35,
+    "gap": 0
+  },
+  "identity_fraction": 0.8873
+}

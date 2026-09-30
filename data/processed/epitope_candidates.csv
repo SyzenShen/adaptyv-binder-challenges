@@ -1,0 +1,5 @@
+candidate_id,domain,uniprot_begin,uniprot_end,length,mouse_conservation_classes,notes
+EPI_H_1,III,316,343,28,"conservative,identical",surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch
+EPI_H_2,III,385,403,19,"conservative,identical",surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch
+EPI_H_3,III,416,431,16,identical,surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch
+EPI_H_4,III,447,460,14,identical,surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch

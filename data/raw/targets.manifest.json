@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "file": "P00533.fasta",
+      "url": "https://rest.uniprot.org/uniprotkb/P00533.fasta",
+      "role": "human EGFR UniProt canonical isoform P00533-1",
+      "retrieved_at_utc": "2026-09-30T18:33:01+00:00",
+      "bytes": 1328,
+      "sha256": "684e2da1f3ef05d0ce90d0aefe9125c6f7e9cdcfeac27ae72ed35243b64a73e8"
+    },
+    {
+      "file": "Q01279.fasta",
+      "url": "https://rest.uniprot.org/uniprotkb/Q01279.fasta",
+      "role": "mouse EGFR UniProt reference (provisional; official construct unknown)",
+      "retrieved_at_utc": "2026-09-30T18:33:03+00:00",
+      "bytes": 1329,
+      "sha256": "92bffc461d90e034548943881b342d5ef42a6a3c6f57d4d6246b7c76f6ece8ea"
+    },
+    {
+      "file": "6ARU.cif",
+      "url": "https://files.rcsb.org/download/6ARU.cif",
+      "role": "PDB 6ARU mmCIF, competition-recommended human structure reference",
+      "retrieved_at_utc": "2026-09-30T18:33:05+00:00",
+      "bytes": 1548867,
+      "sha256": "6cb216f09a7af6eae45a3f1b7745589ed955e2d65155e1b5f3261e3b88c1e110"
+    }
+  ]
+}

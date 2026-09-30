@@ -1,0 +1,11 @@
+{
+  "checked_at_utc": "2026-09-30T18:39:02+00:00",
+  "page_url": "https://proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/egfr",
+  "local_construct": "data/processed/human_construct_25_645.fasta",
+  "local_length": 621,
+  "page_sequence_extracted": true,
+  "page_sequence_length": 621,
+  "char_by_char_identical": true,
+  "first_mismatch": null,
+  "note": "page sequence identical to UniProt P00533-1 slice 25..645"
+}

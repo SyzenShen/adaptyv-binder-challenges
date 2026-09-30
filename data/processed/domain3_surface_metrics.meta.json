@@ -1,0 +1,80 @@
+{
+  "checked_at_utc": "2026-09-30T18:41:15+00:00",
+  "structure": "6ARU",
+  "resolution_A": 3.2,
+  "method": "X-RAY DIFFRACTION",
+  "domain_boundaries": {
+    "I": [
+      25,
+      165
+    ],
+    "II": [
+      166,
+      309
+    ],
+    "III": [
+      310,
+      481
+    ],
+    "IV": [
+      482,
+      621
+    ]
+  },
+  "antibody_chains": [
+    "B",
+    "C"
+  ],
+  "glycan_chains": [
+    "D",
+    "E",
+    "F",
+    "G",
+    "H"
+  ],
+  "cutoffs": {
+    "min_patch_len": 10,
+    "distance_to_fab_A": 8.0,
+    "distance_to_glycan_A": 6.0
+  },
+  "domain_III_residues_analysed": 172,
+  "candidate_patches_found": 4,
+  "candidate_details": [
+    {
+      "candidate_id": "EPI_H_1",
+      "domain": "III",
+      "uniprot_begin": 316,
+      "uniprot_end": 343,
+      "length": 28,
+      "mouse_conservation_classes": "conservative,identical",
+      "notes": "surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch"
+    },
+    {
+      "candidate_id": "EPI_H_2",
+      "domain": "III",
+      "uniprot_begin": 385,
+      "uniprot_end": 403,
+      "length": 19,
+      "mouse_conservation_classes": "conservative,identical",
+      "notes": "surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch"
+    },
+    {
+      "candidate_id": "EPI_H_3",
+      "domain": "III",
+      "uniprot_begin": 416,
+      "uniprot_end": 431,
+      "length": 16,
+      "mouse_conservation_classes": "identical",
+      "notes": "surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch"
+    },
+    {
+      "candidate_id": "EPI_H_4",
+      "domain": "III",
+      "uniprot_begin": 447,
+      "uniprot_end": 460,
+      "length": 14,
+      "mouse_conservation_classes": "identical",
+      "notes": "surface patch far from Fab(>=8.0A) and glycan(>=6.0A); contiguous exposed stretch"
+    }
+  ]
+}
