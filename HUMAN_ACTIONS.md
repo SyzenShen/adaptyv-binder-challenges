@@ -2,30 +2,9 @@
 
 更新：2026-09-30。每条都给“为什么、怎么做、完成标志”。未完成前我不会假设其已完成。
 
-## A1 — GitHub 认证（解除 PUSH_BLOCKED，约 2 分钟）
+## A1 — GitHub 认证 ~~（解除 PUSH_BLOCKED）~~ ✅ 已由用户提供仓库解除（2026-09-30）
 
-**为什么**：`gh` 保存的 token 已失效（账户 SyzenShen），SSH key 也未在 GitHub 注册；我无法替你完成浏览器/设备码授权。
-
-**最短步骤**（在本机终端，当前目录即可）：
-
-```bash
-gh auth login --hostname github.com --git-protocol https --web
-```
-
-按提示选择 HTTPS、用浏览器打开设备码页面、登录你的**个人账户**（确认是 SyzenShen，不是任何组织账户）。若提示上传 SSH key 可选 No（HTTPS + gh 凭据即可）。
-
-**完成后告诉我**，我会执行（你可以先看再让我做）：
-
-```bash
-gh auth status                      # 确认认证账户
-gh repo create egfr-binder-challenge --private --source=. --remote=origin
-git push -u origin main             # 分支名以本地实际为准
-gh api repos/SyzenShen/egfr-binder-challenge/commits/main   # 远端核实
-```
-
-仓库名：默认 `egfr-binder-challenge`（与本地目录同名）。主控指令里的默认名是 `egfr-ph-switch-2026`，如果你想用那个名字，认证时告诉我即可。两种情况下我都会先查远端不存在同名仓库再创建，绝不覆盖。
-
-**完成标志**：远端能查到首个 commit SHA；STATE.md 移除 PUSH_BLOCKED。
+用户提供 `https://github.com/SyzenShen/egfr-binder-challenge.git`（私有），push 成功并经 `git ls-remote` 核实（9ff9d43）。剩余可选动作：本机 `gh` token 仍失效，仅当后续需要 `gh api`（如 PR/issue 操作）时再运行 `gh auth login --hostname github.com --git-protocol https --web`；对日常 commit/push 无影响。
 
 ## A2 — 获取 mouse EGFR 官方构建体信息（约 5 分钟）
 

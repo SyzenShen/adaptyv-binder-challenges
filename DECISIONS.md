@@ -2,7 +2,7 @@
 
 | ID | 日期 (UTC) | 决策 | 依据 | 状态 |
 |---|---|---|---|---|
-| D-001 | 2026-09-30 | 以用户已创建的 `egfr-binder-challenge/` 作为项目根目录（MASTER_PROMPT 默认名 `egfr-ph-switch-2026` 仅作建议；用户已把主控指令放入本目录）。远端仓库名待 A1 认证时确认，默认与本地目录同名，不覆盖任何同名仓库 | 用户在本目录放置并指令执行 提示词.md；§4“默认”措辞 | 已定，远端名 A1 再确认 |
+| D-001 | 2026-09-30 | 以用户已创建的 `egfr-binder-challenge/` 作为项目根目录；远端私有仓库 `SyzenShen/egfr-binder-challenge`（用户创建并提供 URL），与本地目录同名 | 用户在本目录放置并指令执行 提示词.md；§4“默认”措辞 | ✅ 已定并落实 |
 | D-002 | 2026-09-30 | 本地 Intel Mac 只承担 CPU 分析、Git 写入与轻量查看；GPU 计算走 Colab（免费档先行）；不装 CUDA/虚拟机，不改全局 Python | 实测无 CUDA、磁盘仅 27.5GB；MASTER_PROMPT §3C/§5 | 已定 |
 | D-003 | 2026-09-30 | paid_budget=0；任何 Colab 付费方案、付费 GPU/API 在书面批准前不开通 | MASTER_PROMPT §3C | 已定 |
 | D-004 | 2026-09-30 | 生产生成主线只搭 BindCraft 官方流程一条；RFdiffusion/AF3/Chai 不并行安装；Boltz 仅作阶段 4 的独立复核候选 | MASTER_PROMPT §7/§9 | 已定（阶段 2 执行前再按官方文档复核版本） |

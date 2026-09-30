@@ -1,12 +1,12 @@
 # STATE — 项目状态
 
-最后更新：2026-09-30 18:15 CEST (UTC+2) ｜ 阶段：**0 进行中（本地交付完成，PUSH_BLOCKED）**
+最后更新：2026-09-30 20:29 CEST (UTC+2) ｜ 阶段：**0 已交付（本地 commit + 远端核实通过）**；剩余阻塞项为 A2 mouse 构建体与 A3 注册资格
 
 ## 总体里程碑
 
 | 阶段 | 状态 | 说明 |
 |---|---|---|
-| 0 规则/环境/仓库/最小项目 | 🟡 本地完成，远端受阻 | 见下方 blockers |
+| 0 规则/环境/仓库/最小项目 | ✅ 完成（push 已核实） | 远端 main @ 9ff9d43 |
 | 1 目标/映射/表位候选 | ⏳ 未开始 | |
 | 2 云端 smoke test | ⏳ 未开始 | |
 | 3 小批次生成与筛选 | ⏳ 未开始 | |
@@ -28,7 +28,7 @@
 
 ## 当前 Blockers（真实阻挡）
 
-1. **PUSH_BLOCKED** — `gh` keyring token 失效（账户 SyzenShen）；GitHub SSH 也是 `Permission denied (publickey)`。已真实尝试 `gh repo create egfr-binder-challenge --private --source=.`，返回 `HTTP 401: Bad credentials (https://api.github.com/graphql)`，远端未创建、remote 未配置。最短人工动作见 [HUMAN_ACTIONS.md](HUMAN_ACTIONS.md) A1（交互式 `gh auth login --web`，无法由助手代做）。
+1. ~~PUSH_BLOCKED~~ **已解除（2026-09-30）** — 用户提供了已创建的私有仓库 `https://github.com/SyzenShen/egfr-binder-challenge.git`；push 成功，`git ls-remote origin main` 返回 `9ff9d436d32fcdcb49ec11bab78d4adf2f9ba5eb` 与本地 HEAD 一致，仓库页面 HTTP 200。注：`gh` keyring token 仍失效（不影响 HTTPS push；后续若需 `gh api` 操作再做 A1 的 `gh auth login`）。
 2. **MOUSE_CONSTRUCT_UNKNOWN** — 官方 EGFR 页 Mouse EGFR 标签在静态 HTML 与交互式浏览器中均为空面板，未给出 mouse UniProt isoform / 构建体边界 / 序列；不得照搬 human 25–645 或自行假定 Q01279 切片。需登录后查看或向 Proteinbase Slack 询问（A2）。
 3. **ELIGIBILITY/REGISTRATION_PENDING** — Terms §3.1 排除中国等地区的法定居民；Track 3 需在 Proteinbase 注册。需本人确认资格并注册（A3），这是后续一切提交的前提。
 4. **DISK_TIGHT** — 本地容器仅 27.5GB 可用。模型权重/数据集一律走云端，本地只放轻量产物；必要时人工清理磁盘（A4，非阻塞）。
@@ -37,13 +37,13 @@
 
 - 阶段 1（不依赖人工，可先行）：UniProt/RCSB 下载（端点已验证 200），需要网络与 ~少量磁盘。
 - 阶段 2：需要本人登录 Colab、授权 Drive 结果目录；付费必须先批准。
-- 远端备份：依赖 A1 完成。
+- 远端备份：已完成（origin = 用户提供的私有仓库）。
 
 ## 下一动作（按优先级）
 
-1. 用户执行 A1（gh 重新认证）→ 我创建私有仓库、push 并验证远端 commit；阶段 0 关闭。
-2. A1 等待期间：启动阶段 1 中不依赖 mouse 官方构建体的部分——human P00533-1 序列与 6ARU mmCIF 下载、SHA256、初步解析（mouse 映射留到 A2 回复后补齐）。
-3. A2/A3 为用户侧异步动作，不阻塞本地分析，但阻塞最终提交。
+1. ~~A1 gh 重新认证~~ → push 已通过用户提供的仓库完成；gh token 失效仅影响 `gh api` 类操作，非阻塞。
+2. 启动阶段 1 中不依赖 mouse 官方构建体的部分：human P00533-1 序列与 6ARU mmCIF 下载、SHA256、初步解析与残基映射（mouse 部分留到 A2 回复后补齐）。
+3. A2（mouse 构建体）/A3（资格+注册）为用户侧异步动作，不阻塞本地分析，但 A2 阻塞双物种复核设计、A3 阻塞最终提交。
 
 ## 批准记录
 
