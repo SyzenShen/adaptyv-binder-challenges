@@ -1,0 +1,9 @@
+{
+    "design_path": "/content/drive/MyDrive/BindCraft/stage2_smoke/egfr_d3_B_conservative/",
+    "binder_name": "EGFR_D3_Bcons",
+    "starting_pdb": "/content/egfr/6ARU_chainA_domain3_310-481.pdb",
+    "chains": "A",
+    "target_hotspot_residues": "390,393,399,421,424,431",
+    "lengths": [80, 80],
+    "number_of_final_designs": 1
+}

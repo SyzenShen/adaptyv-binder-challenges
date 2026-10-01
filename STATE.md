@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-01 ｜ 阶段：**1.5 目标+assay 感知表位审计完成（本地测试 36/36 通过）**，停在**科学确认点 A+**（[SCIENTIFIC_CHECKPOINT_A_PLUS.md](SCIENTIFIC_CHECKPOINT_A_PLUS.md)，等待用户批准主选 B / 备选 C）；不启动 EGFR 生产生成。剩余阻塞项 A2 mouse 构建体官方凭据、A3 注册资格、A6 Slack 截图
+最后更新：2026-10-01 ｜ 阶段：**2 云端 smoke test — 本地准备完成，等待用户在 Colab 执行（A7）**；A+ 已关闭（主选 B 经用户批准）；**尚无任何 GPU 实测数据（GPU/VRAM/时长均为 null，原因：本机无 NVIDIA GPU，云端未执行）**；不启动 EGFR 生产生成。阻塞项 A7 Colab 执行、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -8,9 +8,9 @@
 |---|---|---|
 | 0 规则/环境/仓库/最小项目 | ✅ 完成（push 已核实） | 远端 main @ 24d362c |
 | 1 目标/映射/表位候选 | ✅ 完成（测试 22/22） | 科学确认点 A 已被 A+ 取代 |
-| 1.5 目标+assay 感知表位审计 | ✅ 计算完成（测试 36/36） | **科学确认点 A+ 待用户批准**；报告见下 |
-| 2 云端 smoke test | ⏳ 未开始 | 依赖确认点 A+ |
-| 3 小批次生成与筛选 | ⏳ 未开始 | |
+| 1.5 目标+assay 感知表位审计 | ✅ 完成（测试 36/36） | A+ 已由用户 2026-10-01 批准（D-013） |
+| 2 云端 smoke test | 🟡 准备完成，执行待 A7 | notebook/配置/分析器/裁剪 PDB 就绪；GPU 实测数据 null |
+| 3 小批次生成与筛选 | ⏳ 未开始 | 依赖 smoke 报告经用户复核 |
 | 4 双物种复核 / 完整 ECD | ⏳ 未开始 | 另依赖 A2 |
 | 5 pH 假设与有限重设计 | ⏳ 未开始 | |
 | 6 新颖性/组合/人工终审 | ⏳ 未开始 | |
@@ -47,12 +47,24 @@
 - 候选指标配置 [candidate_metrics.json](configs/candidate_metrics.json)（排名用；linker 字段保持 null 及原因）。
 - 测试新增 [test_stage15.py](tests/test_stage15.py)（14 个）；系统 unittest 与 .venv pytest 双跑 36/36。
 
+## 阶段 2 进展（真实执行，2026-10-01）
+
+- A+ 关闭：用户书面批准主选 B（UniProt 390–403 + 421–431）、备选 C、H433 推迟阶段 5（D-013）。
+- 官方文档实拉：BindCraft main **7713aa0**（2026-09-21）、ColabDesign main **e31a56f**（2025-10-23，云端解析版本实测后回填）；AF2 权重 alphafold_params_2022-12-06（5.3 GB）；PyRosetta 学术非商业许可。
+- Hotspot 翻译（[bindcraft_hotspot_translation.md](reports/bindcraft_hotspot_translation.md)）：裁剪 PDB [6ARU_chainA_domain3_310-481.pdb](data/processed/6ARU_chainA_domain3_310-481.pdb)（172 残基，resseq=UniProt，坐标未改）；保守集 **390,393,399,421,424,431**（6 个），对照集 12 个全暴露残基（初始不运行）；binder 80 aa。**包络内确认无 F/W/Y/M、无 relSASA≥0.20 的疏水锚（最高 I394=0.145），如实记录为待检验假设**。
+- advanced smoke 文件逐字节复制官方 `default_4stage_multimer.json`，仅 `max_trajectories` false→1/3；非 hardtarget、无目标突变、官方 default_filters 原样。
+- 云端 [stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)：环境元数据采集 → PDL1 官方最小示例（65 aa，hotspot 56，cap 1）→ EGFR micro（cap 3）→ [analyze_bindcraft_run.py](scripts/analyze_bindcraft_run.py) 几何判读（B 接触/迁移/clash/裁剪边缘）→ py3Dmol 目检 → `stage2_smoke_report.json`。
+- **GPU/VRAM/时长/成功率：全部 null（本机 Intel Mac 无 NVIDIA GPU，云端作业未执行，禁止推测）**。未创建 compute_escalation.md（无 OOM 证据，不得虚构）。
+- Slack 凭据：[reports/slack_provenance/INDEX.md](reports/slack_provenance/INDEX.md)，7 条主张全部 PENDING（用户尚未提供截图）。
+- 测试 48/48（新增 [test_stage2.py](tests/test_stage2.py) 12 个）。
+
 ## 当前 Blockers（真实阻挡）
 
-1. **CONFIRMATION_A_PLUS_PENDING** — 主选 B（390–403 + 421–431，H433 留门）/备选 C 已交付，等待用户批准。未经确认不启动生产计算。
-2. **MOUSE_CONSTRUCT_PROOF_PENDING** — mouse 25–647 边界目前仅有用户转达的 Slack 信息，官方页 2026-10-01 仍空；需 A2/A6 截图或官方文本。
-3. **ELIGIBILITY/REGISTRATION_PENDING** — Terms §3.1 排除中国等地区法定居民；Track 3 需 Proteinbase 注册（A3），阻塞最终提交。
-4. **DISK_TIGHT** — 本地容器空间有限。模型权重/数据集走云端（A4，非阻塞）。
+1. **CLOUD_SMOKE_NOT_RUN** — notebook/配置就绪但需本人在 Colab 执行（A7）；GPU 实测数据（型号/VRAM/PDL1 与 EGFR 轨迹结果）未获得前，阶段 3 不得开始。
+2. **MOUSE_CONSTRUCT_PROOF_PENDING** — mouse 25–647 仅 Slack 转述（A2/A6）；不阻塞 human smoke，阻塞阶段 4 mouse 验证。
+3. **SLACK_PROVENANCE_PENDING (A6)** — 7 条 Slack 主张无截图（含上条）；[INDEX](reports/slack_provenance/INDEX.md) 全 PENDING。
+4. **ELIGIBILITY/REGISTRATION_PENDING** — Track 3 资格/注册用户尚未确认（A3）；不阻塞技术 smoke，阻塞提交。
+5. **DISK_TIGHT** — 本地空间有限；权重与产物均在云端（A4，非阻塞）。
 
 ## 依赖
 
@@ -61,11 +73,12 @@
 
 ## 下一动作（按优先级）
 
-1. 用户批准 SCIENTIFIC_CHECKPOINT_A_PLUS.md（主选 B / 备选 C / 维持 A / 再分析 D）；含 H433 推迟到阶段 5 的处理是否同意。
-2. A6：用户提供 Slack 原文截图（mouse 25–647 等 6 条 assay 信息）→ reports/slack_provenance/；A3 资格注册。
-3. A+ 批准后进入阶段 2：Colab 环境准备 + BindCraft 官方示例 smoke test（先非 EGFR），记录真实 GPU/时长/断点续跑。
+1. **A7（用户）**：Colab 打开 [stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)，GPU runtime，按格顺序执行；回传 `BindCraft/stage2_smoke/`（env_metadata.json、stage2_smoke_report.json、两个 log、relaxed PDB）。
+2. 我收到实测产物后写 Stage 2 smoke 报告：环境 vs 靶点故障判定、B 接触/迁移/边缘伪影诊断、仅按实测吞吐给批次建议；若 OOM 两次才写 compute_escalation.md。
+3. A6 Slack 截图；A3 Track 3 资格确认（一次性问题，见 HUMAN_ACTIONS）。
+4. smoke 报告经用户复核前不扩大生成、不跑 broad hotspot、不付费。
 
 ## 批准记录
 
 - 无付费/公开/提交类批准。paid_budget=0。
-- A+ 终决仅为分析推荐，生产生成未获批准。
+- A+ 已批准（D-013）；阶段 2 smoke 范围已由用户 2026-10-01 指令限定（D-014），生产生成未获批准。

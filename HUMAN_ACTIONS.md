@@ -43,6 +43,15 @@
 
 本机可用空间仅 27.5GB。云端方案不受影响，但建议清理出 ≥50GB 余量（系统设置 → 储存空间；清空下载/废纸篓；`brew cleanup`）。不建议为项目购买/外接存储，模型产物本来就不落地本地。
 
-## A5 — Colab 登录（阶段 2 时再做，无需现在操作）
+## A7 — 在 Colab 执行 Stage 2 smoke（阶段 2 当前唯一阻塞，约 30–90 分钟）
 
-阶段 2 我会准备好 notebook 与清单，届时你登录 colab.research.google.com、挂载专用 Drive 结果目录即可；我不会要求保活脚本、代理或多账户（官方明文禁止）。
+**为什么**：本机是 Intel Mac、无 NVIDIA GPU，BindCraft 必须在 CUDA GPU 上跑；notebook/配置/分析器我已全部备好并测试（48/48），但**真实 GPU 数据只能由你登录 Colab 产生**。没有实测前不会进入阶段 3，也不会替你推测 GPU 型号、VRAM 或耗时。
+
+**最短步骤**：
+1. 打开 https://colab.research.google.com → Upload → 选仓库里的 [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)；Runtime → Change runtime type → **T4 GPU（免费档）**。
+2. 从上到下逐格执行（细节见 [RUNBOOK.md](RUNBOOK.md) §7）。Cell 5 会弹窗，选本仓库两个文件：`data/processed/6ARU_chainA_domain3_310-481.pdb` 与 `scripts/analyze_bindcraft_run.py`。
+3. **顺序很重要**：先跑官方 PDL1 示例（环境验证），成功后才自动继续 EGFR；若 PDL1 失败，停止并把 log 发我，不要自行改 EGFR 配置。
+4. OOM：Factory reset 后最多重试一次；第二次仍 OOM 就停，不要反复撞。
+5. 完成后把 Drive 文件夹 `BindCraft/stage2_smoke/` 分享给我（或至少回传 `env_metadata.json`、`stage2_smoke_report.json`、两个 `.log`、一个 relaxed PDB）。
+
+**完成标志**：我拿到上述真实产物并写出 Stage 2 smoke 报告（环境 vs 靶点故障判定 + B 接触/迁移/边缘结论 + 仅按实测吞吐的批次建议）。在此之前 EGFR 生产生成、broad hotspot、付费计算一律不启动。

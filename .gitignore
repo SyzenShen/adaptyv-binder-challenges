@@ -34,6 +34,7 @@ data/processed/*
 !data/processed/*.csv
 !data/processed/*.json
 !data/processed/*.fasta
+!data/processed/*.pdb
 data/inbox/*
 !data/inbox/.gitkeep
 data/external/
@@ -46,6 +47,8 @@ results/**/raw_predictions/
 *.cif
 *.mmcif
 !submission/structures/.gitkeep
+# light derived BindCraft input (172-res crop), explicitly tracked
+!data/processed/6ARU_chainA_domain3_310-481.pdb
 
 # --- OS / IDE noise ---
 .DS_Store

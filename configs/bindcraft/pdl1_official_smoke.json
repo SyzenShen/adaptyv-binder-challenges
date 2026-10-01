@@ -1,0 +1,9 @@
+{
+    "design_path": "/content/drive/MyDrive/BindCraft/stage2_smoke/pdl1_official_smoke/",
+    "binder_name": "PDL1_smoke",
+    "starting_pdb": "/content/bindcraft/example/PDL1.pdb",
+    "chains": "A",
+    "target_hotspot_residues": "56",
+    "lengths": [65, 65],
+    "number_of_final_designs": 1
+}

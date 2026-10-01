@@ -6,7 +6,7 @@
 
 下列 1–6 条为 **USER_PROVIDED_OFFICIAL_COMPETITION_SLACK**：由用户于 2026-10-01 从官方比赛 Slack 转达（指令文本存档于会话记录）。**截图证据：PENDING（尚未入库）**。在截图归档前，这些条目不得升级为"已独立核实"；如与官方页面/Terms 冲突，以官方页面为准并回改。
 
-- 待用户动作（HUMAN_ACTIONS A6）：把 Slack 原消息截图放入 `reports/slack_provenance/`（文件名带日期），我会回填本文件引用。
+- 待用户动作（HUMAN_ACTIONS A6）：把 Slack 原消息截图按 [slack_provenance/INDEX.md](slack_provenance/INDEX.md) 的命名放入 `reports/slack_provenance/`，我会回填本文件引用。
 
 ## 2. 测定构建与读数
 

@@ -1,0 +1,40 @@
+{
+  "generated_utc": "2026-10-01T10:27:30Z",
+  "source": "6ARU.cif chain A (Cetuximab Fab complex; target atoms only)",
+  "source_uniprot": "P00533-1",
+  "crop_uniprot_range": [
+    310,
+    481
+  ],
+  "crop_auth_range_6ARU": [
+    286,
+    457
+  ],
+  "n_residues": 172,
+  "numbering_scheme": "resseq equals UniProt P00533-1 position; chain A",
+  "numbering_basis": "6ARU chain A auth_seq_id + 24 = UniProt (struct_ref_seq derived; no insertions)",
+  "contents": "protein atoms only; glycans D-H, waters, Fab chains B-C and His6 tag excluded",
+  "coordinates_modified": false,
+  "residues_added_or_mutated": false,
+  "ssbond_records_written": false,
+  "ssbond_note": "Disulfides are encoded geometrically (unmodified SG coordinates): C311-C326, C329-C333, C337-C362 fully inside crop; C470 inside with partner C499 outside crop (broken edge bond, distant from B envelope).",
+  "cysteines_uniprot_in_crop": [
+    311,
+    326,
+    329,
+    333,
+    337,
+    362,
+    470
+  ],
+  "approved_envelope_B": [
+    [
+      390,
+      403
+    ],
+    [
+      421,
+      431
+    ]
+  ]
+}

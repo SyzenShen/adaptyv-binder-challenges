@@ -14,10 +14,14 @@
 | D-010 | 2026-10-01 | **撤回阶段 1"H418 为表面 His"结论**：6ARU 全 ECD SASA 显示 H418 relSASA=0.022（埋藏，不可被外部 binder 接触）；pH 机制几何聚焦 H370（部分暴露 0.155、近 E368）与 H433（0.676 高暴露、8 Å 内无 Asp/Glu，机制 B 需 binder 自带酸性残基） | audit_geometry.py 实测；ph_target_hotspot_audit.md | 已定（结构事实） |
 | D-011 | 2026-10-01 | 生产生成主线仍只保留 BindCraft；Germinal（VHH/scFv 抗体路线，Mille-Fragoso 2026）不上主线，仅在用户明确批准时作为可选侧枝做小 smoke test；其 ≥40–60 GB VRAM + PyRosetta 学术许可与免费 Colab/40–100 aa 非抗体赛题不匹配 | germinal_assessment.md（论文+仓库实测调研） | 已定 |
 | D-012 | 2026-10-01 | 不猜 GFP11/TwinStrep 等标签连接序列；candidate_metrics.json 中所有 linker/标签字段保持 null 并注明原因；表达/可开发性作为与 pH 分离的独立评分轴 | assay_metadata.md；MASTER_PROMPT §6 禁止推测 | 已定 |
-| D-013 | 2026-10-01 | A+ 推荐（非用户已批）：主选 B = 精修 Scheme 1 hotspot 390–403 + 421–431（H433 不纳入初始 hotspot，432–433 扩展推迟到阶段 5 凭 PROPKA/多构象证据决定）；备选 C = EPI_H_1 316–343（高糖/Cys 风险）；A 原样与 D(EPI_H_4) 不推荐，理由见 checkpoint | SCIENTIFIC_CHECKPOINT_A_PLUS.md | **待用户批准** |
+| D-013 | 2026-10-01 | **用户批准确认点 A+**：主选 B（生物表位包络 human EGFR UniProt 390–403 + 421–431），备选 C（316–343）仅在主选经书面排障后系统性失败时启用；432–433/H433 定向设计推迟到阶段 5，初始 BindCraft hotspot 不强制 H433。用户明确：避开 Cetux 表位不是因为禁止接触，而是第一代 campaign 要先发现独立的 de novo 结合方案、再把 H433 作为机制性 pH 杠杆测试。表位包络 ≠ BindCraft hotspot 列表，后者须经官方文档翻译（见 bindcraft_hotspot_translation.md）；包络外加残基必须回本检查点批准 | 用户 2026-10-01 书面批准；SCIENTIFIC_CHECKPOINT_A_PLUS.md | ✅ A+ 已关闭 |
+| D-014 | 2026-10-01 | 阶段 2 只做云端 smoke test（官方最小示例 → 1–3 条 EGFR micro 轨迹，binder 长度取 40–100 aa 内一个合理值），不开始大规模 EGFR 生产；不突变靶点、不用 hardtarget/hard-target hack；OOM 最多 2 次有据尝试后出 compute_escalation.md，付费计算一律先批 | 用户 2026-10-01 Stage 2 指令；paid_budget 仍为 0 | 🟡 准备完成，执行待 A7 |
+| D-015 | 2026-10-01 | BindCraft 翻译执行决策：①裁剪 PDB 保留 UniProt 编号（resseq 310–481），hotspot 数字即 UniProt 数字（经 ColabDesign prep_pos 源码与 PDL1 非 1 起编示例证实）；②初始保守 hotspot = 390,393,399,421,424,431（6 个，优先 helix/分散）；broad 12 残基配置已备但初始不运行；③binder 单一长度 80 aa；④advanced 仅改 max_trajectories（1/3），其余逐字官方默认；⑤pin BindCraft 7713aa0；ColabDesign 未 pin 是官方安装脚本行为，云端实测回填 | bindcraft_hotspot_translation.md；官方 README/wiki 2026-10-01 实拉 | 已定 |
+| D-016 | 2026-10-01 | 包络 B 内无 F/W/Y/M、无 relSASA≥0.20 疏水锚是**待 smoke 检验的假设**，不是改表位理由；禁止发明锚点、禁止为此突变靶点；若轨迹回避 B，按五类原因（编号翻译/hotspot 化学/采样数/裁剪/文档记载行为）先诊断 | 用户指令；domain3_geometry.csv 实测 | 已定 |
 
 ## 待决策（到确认点才需要）
 
-- 确认点 A+（阶段 1.5 末）：批准主选 B / 备选 C / 维持 A / 再分析 D；并裁定 H433 扩展推迟处理是否同意。
-- 确认点 B（阶段 5 中）：3–5 个有结构依据的 pH 改造方案选择。
+- ~~确认点 A+~~：✅ 2026-10-01 已批准（D-013）。
+- 确认点 B（阶段 5 中）：3–5 个有结构依据的 pH 改造方案选择（含 H433/432–433 扩展是否启动）。
 - 确认点 C（阶段 6 末）：最终序列、排名、公开材料批准；批准 ID + sequence hash 写入本文件。
+- 阶段 2 smoke 报告复核：是否进入阶段 3 小批次（需实测吞吐数据 + 用户批准）。
