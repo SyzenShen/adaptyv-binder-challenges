@@ -1,10 +1,14 @@
 """Stage 2 tests: Domain III crop PDB, BindCraft config translation,
-hotspot-envelope containment, smoke notebook validity, run analyzer.
+hotspot-envelope containment, smoke notebook validity, isolated-environment
+fix for failure 001 (Colab JAX 0.11.1 / xla_bridge removal), pre-flight gate,
+run analyzer.
 
 Stdlib only (no third-party dependency at test time).
 """
 import ast
+import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -133,6 +137,10 @@ class TestSmokeNotebook(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.nb = json.loads((CLOUD / "stage2_bindcraft_smoke.ipynb").read_text())
+        cls.code_cells = [
+            "".join(c["source"]) for c in cls.nb["cells"]
+            if c["cell_type"] == "code"]
+        cls.code_text = "\n".join(cls.code_cells)
 
     def test_valid_and_pinned(self):
         self.assertEqual(self.nb["nbformat"], 4)
@@ -149,6 +157,140 @@ class TestSmokeNotebook(unittest.TestCase):
         for i, cell in enumerate(self.nb["cells"]):
             if cell["cell_type"] == "code":
                 ast.parse("".join(cell["source"]), filename=f"cell{i}")
+
+
+class TestPreflightVersionPolicy(unittest.TestCase):
+    """Regression guard for environment failure 001:
+    Colab image Python 3.13.15 + JAX 0.11.1 removed jax.lib.xla_bridge
+    (removed upstream in JAX 0.8.0), crashing ColabDesign.clear_mem().
+    """
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "bindcraft_preflight", SCRIPTS / "bindcraft_preflight.py")
+        cls.pf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.pf)
+
+    def test_supported_versions_accepted(self):
+        for v in ("0.4.35", "0.6.0"):
+            ok, _ = self.pf.check_bounded(
+                "jax", v, self.pf.JAX_MIN, self.pf.JAX_MAX)
+            self.assertTrue(ok, v)
+
+    def test_unsupported_jax_versions_rejected(self):
+        for v in ("0.6.1", "0.7.2", "0.8.0", "0.10.2", "0.11.1"):
+            ok, msg = self.pf.check_bounded(
+                "jax", v, self.pf.JAX_MIN, self.pf.JAX_MAX)
+            self.assertFalse(ok, v)
+            self.assertIn("0.8.0", msg)
+
+    def test_exact_observed_bad_version_rejected_as_001(self):
+        ok, msg = self.pf.check_bounded(
+            "jax", "0.11.1", self.pf.JAX_MIN, self.pf.JAX_MAX)
+        self.assertFalse(ok)
+        self.assertIn("0.11.1", msg)
+        self.assertIn("xla_bridge", msg)
+
+    def test_python_required_is_310(self):
+        self.assertEqual(self.pf.PYTHON_REQUIRED, (3, 10))
+
+    def test_numpy_and_flax_upper_pins(self):
+        self.assertTrue(self.pf.check_upper("numpy", "1.26.4", (2, 0))[0])
+        self.assertFalse(self.pf.check_upper("numpy", "2.2.6", (2, 0))[0])
+        self.assertTrue(self.pf.check_upper("flax", "0.9.3", (0, 10))[0])
+        self.assertFalse(self.pf.check_upper("flax", "0.10.0", (0, 10))[0])
+
+    def test_gate_exits_nonzero_and_reports_json_when_jax_absent(self):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "pf.json"
+            p = subprocess.run([sys.executable,
+                                str(SCRIPTS / "bindcraft_preflight.py"),
+                                "--out", str(out)],
+                               capture_output=True, text=True)
+            self.assertNotEqual(p.returncode, 0)
+            report = json.loads(out.read_text())
+            self.assertFalse(report["passed"])
+            names = {c["check"] for c in report["checks"]}
+            # the exact failure-001 probes exist in the gate
+            self.assertIn("clear_mem", names)
+            self.assertIn("xla_bridge_get_backend", names)
+            self.assertIn("trivial_gpu_matmul", names)
+
+
+class TestNotebookIsolatedEnvFix(unittest.TestCase):
+    """The notebook must create a fresh Colab runtimes reproducible env
+    matching upstream; it must not accept the preinstalled JAX 0.11.x.
+    """
+    @classmethod
+    def setUpClass(cls):
+        nb = json.loads((CLOUD / "stage2_bindcraft_smoke.ipynb").read_text())
+        cls.cells = nb["cells"]
+        cls.code = [
+            "".join(c["source"]) for c in cls.cells if c["cell_type"] == "code"]
+        cls.text = "\n".join(cls.code)
+
+    def indices(self, needle):
+        return [i for i, s in enumerate(self.code) if needle in s]
+
+    def test_upstream_env_spec_present(self):
+        for needle in ("Miniforge3-Linux-x86_64.sh", "python=3.10",
+                       "jax=0.6.0", "jaxlib=0.6.0=*cuda*",
+                       "CONDA_OVERRIDE_CUDA", "'12.6'", "numpy<2.0.0",
+                       "flax<0.10.0", "-c", "conda-forge", "nvidia"):
+            self.assertIn(needle, self.text, needle)
+
+    def test_colabdesign_pinned_and_no_deps_inside_env(self):
+        self.assertIn(
+            "e31a56fe1d9b4de25c8697f3a28b75892941cc72", self.text)
+        self.assertRegex(
+            self.text,
+            r"ENV_PREFIX\}/bin/pip', 'install', '--no-deps',\s*"
+            r"f?'git\+https://github\.com/sokrypton/ColabDesign\.git@")
+        # the old broken attempt-001 command must never come back
+        self.assertNotIn(
+            "pip install -q git+https://github.com/sokrypton/ColabDesign.git",
+            self.text)
+
+    def test_kernel_never_uses_preinstalled_jax_or_colabdesign(self):
+        for i, src in enumerate(self.code):
+            self.assertIsNone(
+                re.search(r"^\s*(?:import|from)\s+(jax|colabdesign)\b",
+                          src, re.M),
+                f"system-kernel jax/colabdesign import in code cell {i}")
+
+    def test_compute_subprocesses_use_isolated_python(self):
+        self.assertIn("BINDPY = f'{ENV_PREFIX}/bin/python'",
+                      self.text)
+        self.assertIn("[BINDPY, '-u', 'bindcraft.py'", self.text)
+
+    def test_preflight_uploaded_and_runs_before_weights_and_pdl1(self):
+        self.assertTrue(
+            any("'/content/bindcraft_preflight.py'" in s for s in self.code))
+        gate = self.indices("bindcraft_preflight.py")[0]
+        weights = self.indices("alphafold_params_2022-12-06.tar")[0]
+        pdl1 = self.indices("'pdl1_official_smoke'")[0]
+        self.assertLess(gate, weights)
+        self.assertLess(weights, pdl1)
+
+    def test_preflight_gate_asserts_hard_stop(self):
+        gate_cells = self.indices("PRE-FLIGHT FAILED")
+        self.assertTrue(gate_cells)
+        self.assertIn("assert pfp.returncode == 0 and pf['passed']",
+                      self.code[gate_cells[0]])
+
+    def test_pdl1_gate_blocks_egfr(self):
+        pdl1_gate = self.indices("PDL1 relaxed trajectories")[0]
+        egfr = self.indices("job_records['egfr_d3_B_conservative']")[0]
+        self.assertLess(pdl1_gate, egfr)
+
+    def test_scientific_settings_untouched(self):
+        self.assertIn("'target_hotspot_residues': '390,393,399,421,424,431'",
+                      self.text)
+        self.assertIn("'lengths': [80, 80]", self.text)
+        self.assertIn("'target_hotspot_residues': '56'", self.text)
+        self.assertIn("'lengths': [65, 65]", self.text)
+        self.assertIn("assert diff == {'max_trajectories': (False, n)}",
+                      self.text)
 
 
 class TestAnalyzerOnSyntheticTemp(unittest.TestCase):

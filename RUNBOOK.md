@@ -68,25 +68,31 @@ curl -fSL "https://files.rcsb.org/download/6ARU.cif" -o data/raw/6ARU.cif
 
 ## 7. 阶段 2 BindCraft smoke（2026-10-01 起）
 
+背景：云端尝试 001 在**环境层**失败——Colab 滚动镜像 Py 3.13.15 / JAX 0.11.1 已移除
+`jax.lib.xla_bridge`（JAX 0.8.0 起移除），ColabDesign `clear_mem()` 崩在官方 PDL1 示例。
+完整根因/证据见 [reports/stage2_environment_failure_001.md](reports/stage2_environment_failure_001.md)。
+notebook 现自建隔离 Python 3.10 + JAX 0.6.0(CUDA 12.6) 环境，等价官方 install_bindcraft.sh。
+
 本机制备（本机可复现）：
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 48/48 期望
+python3 -m unittest discover -s tests             # 62/62 期望
 ```
 
-云端执行（用户 A7，约 30–90 分钟，免费 T4 即可起步）：
+云端执行（用户 A7，首次建环境约 10–25 分钟，之后总时长按实测，免费 T4）：
 
-1. Colab → File → Upload notebook：`cloud/stage2_bindcraft_smoke.ipynb`；Runtime → Change runtime type → **T4 GPU**。
-2. 顺序执行 Cell 1–11，**不要改任何数字**：
-   - Cell 2 安装 BindCraft **pin 7713aa0** + ColabDesign（解析版本自动记录）+ PyRosetta + AF2 权重（5.3 GB）；
-   - Cell 5 上传两个文件：`data/processed/6ARU_chainA_domain3_310-481.pdb`、`scripts/analyze_bindcraft_run.py`；
-   - Cell 7 先跑**官方最小示例 PDL1（65 aa / hotspot 56 / cap 1）**——它失败=环境故障，**停**，不要碰 EGFR；
-   - Cell 9 才跑 EGFR micro（B 保守 hotspot 6 残基 / 80 aa / cap 3）。
-3. OOM 纪律：Factory reset 后**最多再试 1 次**（累计 2 次）即停；把 Cell 1/3 元数据与 log 交回，我写 `reports/compute_escalation.md`——该文件在观察到 OOM 前不存在。
-4. 产物落在 Drive `BindCraft/stage2_smoke/`：`env_metadata.json`、`stage2_smoke_report.json`、`*_vram.csv`、两个 `.log`、`Trajectory/` PDB。回传这些文件（下载或共享 Drive 链接均可）。
-5. 判读纪律：completed ≠ success；binder 是否接触 B、是否迁移、是否抱裁剪边缘、有无严重 clash 以 analyzer JSON + Cell 11 三维目检为准；接受/拒绝看官方 filters 的 `Accepted/` 与 CSV。
-6. smoke 复核前：不跑 broad（12 残基）配置、不加轨迹数、不改表位、不付费；ColabDesign 若升级导致接口变化，先在报告中记录实际 commit 再决定是否适配。
+1. **先 Disconnect and delete runtime**（清掉尝试 001 的 JAX 0.11.1 残留）→ Runtime → Change runtime type → **T4 GPU** → Upload 新版 `cloud/stage2_bindcraft_smoke.ipynb`。
+2. 顺序执行 Cell 1–13，**不要改任何数字**：
+   - Cell 2 在 `/content/bindcraft_env` 自建 Miniforge **Python 3.10** 环境：conda-forge/nvidia `jax=0.6.0 jaxlib=0.6.0=*cuda*`（`CONDA_OVERRIDE_CUDA=12.6`）、`numpy<2`、`flax<0.10`、ColabDesign pin e31a56f `--no-deps`、PyRosetta cp310 wheel；Colab 系统 Python 3.13/JAX 0.11 不参与任何计算；
+   - Cell 5 上传**三个**文件：`data/processed/6ARU_chainA_domain3_310-481.pdb`、`scripts/analyze_bindcraft_run.py`、`scripts/bindcraft_preflight.py`；
+   - **Cell 6 pre-flight 硬门**（先于 5.3 GB 权重下载）：必须打印 `PRE-FLIGHT PASSED on Tesla T4 | jax 0.6.0 | cuda backend 12.6...`；失败即停，回传 `preflight.json`，不要继续；
+   - Cell 9 跑**官方最小示例 PDL1（65 aa / hotspot 56 / cap 1）**——失败=环境故障，**停**，不要碰 EGFR；Cell 10 断言 relaxed PDB 存在才放行；
+   - Cell 11 才跑 EGFR micro（B 保守 hotspot 6 残基 / 80 aa / cap 3）。
+3. OOM 纪律：Factory reset 后**最多再试 1 次**（累计 2 次）即停；把 preflight.json、env_metadata 与 log 交回，我写 `reports/compute_escalation.md`——该文件在观察到 OOM 前不存在。
+4. 产物落在 Drive `BindCraft/stage2_smoke/`：`preflight.json`、`env_metadata.json`（含 `pip_freeze.txt`/`conda_list.txt`）、`stage2_smoke_report.json`、`*_vram.csv`、两个 `.log`、`Trajectory/` PDB。
+5. 判读纪律：completed ≠ success；binder 是否接触 B、是否迁移、是否抱裁剪边缘、有无严重 clash 以 analyzer JSON + Cell 13 三维目检为准；接受/拒绝看官方 filters 的 `Accepted/` 与 CSV。
+6. smoke 复核前：不跑 broad（12 残基）配置、不加轨迹数、不改表位、不回退 Colab runtime 版本、不 monkey-patch 上游、不付费；依赖升级先记录实际版本再决定。
 
 本地分析回传产物（无 GPU 也能跑，纯标准库）：
 
