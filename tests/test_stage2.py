@@ -210,11 +210,123 @@ class TestPreflightVersionPolicy(unittest.TestCase):
             self.assertNotEqual(p.returncode, 0)
             report = json.loads(out.read_text())
             self.assertFalse(report["passed"])
-            names = {c["check"] for c in report["checks"]}
-            # the exact failure-001 probes exist in the gate
+            names = [c["check"] for c in report["checks"]]
+            skip_names = [s["check"] for s in report["skipped"]]
+            # the exact failure-001 probes exist in the gate and really ran
             self.assertIn("clear_mem", names)
             self.assertIn("xla_bridge_get_backend", names)
-            self.assertIn("trivial_gpu_matmul", names)
+            self.assertIn("jax_import", names)
+            # downstream probes that could not run are SKIP, not extra failures
+            self.assertIn("trivial_gpu_matmul", skip_names)
+            self.assertIn("gpu_visible", skip_names)
+            self.assertNotIn("trivial_gpu_matmul", names)
+            self.assertTrue(all(s["status"] == "SKIP"
+                                for s in report["skipped"]))
+            # no duplicate or cascading root-failure entries
+            self.assertEqual(len(names), len(set(names)))
+            self.assertEqual(len(skip_names), len(set(skip_names)))
+            self.assertFalse(set(names) & set(skip_names))
+
+
+class TestPreflightDeviceSemantics(unittest.TestCase):
+    """Regression for the attempt-002 harness bug (2026-10-01): the isolated
+    env was healthy (jax 0.6.0 GPU stack verified) but the gate crashed with
+    TypeError: 'set' object is not subscriptable because it indexed
+    jax.Array.devices()[0]; Array.devices() returns set[Device].
+    """
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "bindcraft_preflight", SCRIPTS / "bindcraft_preflight.py")
+        cls.pf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.pf)
+
+    class FakeDevice:
+        def __init__(self, platform):
+            self.platform = platform
+
+        def __str__(self):
+            return f"{self.platform}-device"
+
+    class FakeArray:
+        def __init__(self, platforms):
+            self._devices = {TestPreflightDeviceSemantics.FakeDevice(p)
+                             for p in platforms}
+
+        def devices(self):
+            return self._devices           # set, like jax.Array.devices()
+
+    def test_source_never_indexes_devices_collection(self):
+        src = (SCRIPTS / "bindcraft_preflight.py").read_text()
+        self.assertNotIn("devices()[0]", src)
+        self.assertNotIn("devices()[", src)
+
+    def test_array_on_gpu_accepts_set_valued_devices(self):
+        self.assertTrue(self.pf.array_on_gpu(self.FakeArray(["gpu"])))
+        self.assertTrue(self.pf.array_on_gpu(self.FakeArray(["cpu", "gpu"])))
+        self.assertFalse(self.pf.array_on_gpu(self.FakeArray(["cpu"])))
+        self.assertFalse(self.pf.array_on_gpu(self.FakeArray([])))
+
+    def _fake_jax_stack(self, backend, platforms, value=None):
+        class FakeScalar:
+            def block_until_ready(self):
+                return self
+
+            def __float__(self):
+                return float(2048 ** 3) if value is None else value
+
+            def devices(self):
+                return {TestPreflightDeviceSemantics.FakeDevice(p)
+                        for p in platforms}    # set-valued, like real JAX
+
+        class FakeMat:
+            def __matmul__(self, other):
+                return self
+
+            def sum(self):
+                return FakeScalar()
+
+        class FakeJNP:
+            float32 = "float32"
+
+            @staticmethod
+            def ones(shape, dtype=None):
+                return FakeMat()
+
+        class FakeJax:
+            @staticmethod
+            def default_backend():
+                return backend
+
+        return FakeJax, FakeJNP
+
+    def test_matmul_check_passes_on_healthy_fake_gpu(self):
+        jax, jnp = self._fake_jax_stack("gpu", ["gpu"])
+        ok, detail, info = self.pf.run_gpu_matmul_check(jax, jnp)
+        self.assertTrue(ok, detail)
+        self.assertTrue(info["numerically_correct"])
+        self.assertEqual(info["backend"], "gpu")
+        self.assertEqual(info["sum"], float(2048 ** 3))
+        self.assertTrue(info["gpu_devices"])
+
+    def test_matmul_check_rejects_cpu_default_backend(self):
+        jax, jnp = self._fake_jax_stack("cpu", ["cpu"])
+        ok, detail, _ = self.pf.run_gpu_matmul_check(jax, jnp)
+        self.assertFalse(ok)
+        self.assertIn("backend", detail)
+
+    def test_matmul_check_rejects_cpu_resident_result(self):
+        jax, jnp = self._fake_jax_stack("gpu", ["cpu"])
+        ok, detail, _ = self.pf.run_gpu_matmul_check(jax, jnp)
+        self.assertFalse(ok)
+        self.assertIn("not resident", detail)
+
+    def test_matmul_check_rejects_wrong_numbers(self):
+        jax, jnp = self._fake_jax_stack("gpu", ["gpu"], value=1.0)
+        ok, detail, info = self.pf.run_gpu_matmul_check(jax, jnp)
+        self.assertFalse(ok)
+        self.assertIn("numerically wrong", detail)
+        self.assertFalse(info["numerically_correct"])
 
 
 class TestNotebookIsolatedEnvFix(unittest.TestCase):

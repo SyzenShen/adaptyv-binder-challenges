@@ -18,6 +18,14 @@ Version policy (evidence: reports/stage2_environment_failure_001.md):
 - numpy<2 and flax<0.10: exact upstream pins.
 - A GPU device must be visible to JAX and a trivial op must execute on it.
 
+Harness note (attempt 002, 2026-10-01): jax.Array.devices() returns
+set[Device]; it must be iterated, never indexed. The first version of this
+gate subscripted it with [0] and raised TypeError on a healthy JAX 0.6.0 GPU
+stack. That was a bug in THIS SCRIPT (test-harness bug), NOT a new
+BindCraft/JAX environment incompatibility. Checks that cannot run because a
+prerequisite failed are reported as SKIP entries, never as additional root
+failures.
+
 Stdlib-only at import time; jax/colabdesign are imported inside main() so the
 policy functions are unit-testable on a machine without JAX.
 """
@@ -79,9 +87,68 @@ def check_upper(name, version, forbidden):
                 f"({'<' if ok else 'NOT <'}{'.'.join(map(str, forbidden))})")
 
 
+def gpu_devices(devices):
+    """GPU devices from ANY iterable collection.
+
+    jax.devices() returns a list, but jax.Array.devices() returns a
+    set[Device] (not subscriptable). Always iterate; never index with [0].
+    """
+    return [d for d in devices if getattr(d, "platform", None) == "gpu"]
+
+
+def array_on_gpu(array):
+    """True if the array is resident on at least one GPU device."""
+    try:
+        return bool(gpu_devices(array.devices()))
+    except Exception:
+        return False
+
+
+def run_gpu_matmul_check(jax, jnp, size=2048):
+    """Real GPU compute probe. Returns (ok, detail, info).
+
+    Verifies all four conditions:
+    1. JAX default backend is 'gpu';
+    2. a size x size float32 matmul completes;
+    3. the numerical result is correct (sum of ones@ones == size**3);
+    4. the resulting array is resident on at least one GPU device
+       (devices() may be a set -- iterate, never index).
+    """
+    backend = jax.default_backend()
+    info = {"backend": backend, "size": size}
+    if backend != "gpu":
+        return False, f"JAX default backend is {backend!r}, expected 'gpu'", info
+    x = jnp.ones((size, size), dtype=jnp.float32)
+    y = (x @ x).sum().block_until_ready()
+    value = float(y)
+    expected = float(size ** 3)
+    devices = list(y.devices())           # set[Device]: iterate, never index
+    gpu_devs = [str(d) for d in gpu_devices(devices)]
+    correct = abs(value - expected) / expected < 1e-3
+    info.update({"sum": value, "expected": expected,
+                 "numerically_correct": correct,
+                 "devices": [str(d) for d in devices],
+                 "gpu_devices": gpu_devs})
+    if not correct:
+        return False, (f"matmul numerically wrong: sum={value} "
+                       f"expected={expected}"), info
+    if not gpu_devs:
+        return False, (f"matmul result not resident on any GPU device: "
+                       f"devices={info['devices']}"), info
+    return True, (f"backend=gpu; {size}x{size} fp32 matmul "
+                  f"sum={value:.1f} matches {expected:.1f}; "
+                  f"resident on GPU {gpu_devs}"), info
+
+
 def _result(checks, name, ok, detail):
     checks.append({"check": name, "ok": bool(ok), "detail": detail})
     return bool(ok)
+
+
+def _skip(skipped, name, reason):
+    """Mark a probe as not executed. A SKIP is never a root failure and
+    never affects report['passed'] (a real upstream failure already did)."""
+    skipped.append({"check": name, "status": "SKIP", "detail": reason})
 
 
 def main(argv=None):
@@ -90,11 +157,14 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     checks = []
-    report = {"passed": False, "checks": checks, "versions": {}, "gpu": {}}
+    skipped = []
+    report = {"passed": False, "checks": checks, "skipped": skipped,
+              "versions": {}, "gpu": {}}
 
     _result(checks, "python", *check_python(platform.python_version()))
 
     jax = None
+    jnp = None
     try:
         jax = importlib.import_module("jax")
         import jax.numpy as jnp
@@ -103,7 +173,6 @@ def main(argv=None):
                 *check_bounded("jax", jax.__version__, JAX_MIN, JAX_MAX))
     except Exception as exc:  # environment must be treated as failed
         _result(checks, "jax_import", False, f"import jax failed: {exc!r}")
-        jnp = None
 
     try:
         jaxlib_ver = importlib.metadata.version("jaxlib")
@@ -167,33 +236,33 @@ def main(argv=None):
 
     if jax is not None:
         devices = jax.devices()
-        gpus = [d for d in devices if d.platform == "gpu"]
+        gpus = gpu_devices(devices)
         report["gpu"] = {
             "platform": gpus[0].platform if gpus else None,
             "device_kind": gpus[0].device_kind if gpus else None,
             "n_gpu": len(gpus),
             "all_devices": [f"{d.platform}:{d.device_kind}" for d in devices],
         }
-        _result(checks, "gpu_visible", len(gpus) >= 1,
-                report["gpu"]["all_devices"])
+        gpu_visible = _result(checks, "gpu_visible", len(gpus) >= 1,
+                              report["gpu"]["all_devices"])
 
-        matmul_ok = False
-        if jnp is not None and gpus:
+        if jnp is not None and gpu_visible:
             try:
-                x = jnp.ones((2048, 2048), dtype=jnp.float32)
-                y = (x @ x).sum().block_until_ready()
-                value = float(y)
-                on_gpu = y.devices()[0].platform == "gpu"
-                expected = float(2048 ** 3)
-                matmul_ok = abs(value - expected) / expected < 1e-3 and on_gpu
-                _result(checks, "trivial_gpu_matmul", matmul_ok,
-                        f"2048x2048 matmul sum={value:.1f} on {y.devices()[0]}")
+                ok, detail, info = run_gpu_matmul_check(jax, jnp)
+                report["gpu"]["matmul"] = info
+                _result(checks, "trivial_gpu_matmul", ok, detail)
             except Exception as exc:
                 _result(checks, "trivial_gpu_matmul", False,
                         f"GPU matmul failed: {exc!r}")
-        if not matmul_ok:
-            _result(checks, "trivial_gpu_matmul", False,
-                    "GPU matmul not executed (jax or GPU unavailable above)")
+        else:
+            _skip(skipped, "trivial_gpu_matmul",
+                  "jax.numpy or GPU unavailable above; see the real failed "
+                  "check (jax_import / gpu_visible) for the root cause")
+    else:
+        _skip(skipped, "gpu_visible",
+              "jax unavailable; root cause is the jax_import failure above")
+        _skip(skipped, "trivial_gpu_matmul",
+              "jax unavailable; root cause is the jax_import failure above")
 
     try:
         pyrosetta = importlib.import_module("pyrosetta")
@@ -204,15 +273,9 @@ def main(argv=None):
         _result(checks, "pyrosetta_import", False,
                 f"import pyrosetta failed: {exc!r}")
 
-    # guarantee every probe is reported even when earlier imports aborted
-    recorded = {c["check"] for c in checks}
-    for required in ("jax_import", "gpu_visible", "trivial_gpu_matmul"):
-        if required not in recorded:
-            _result(checks, required, False,
-                    "not executed because an earlier prerequisite failed")
-
     report["versions"]["python"] = platform.python_version()
-    report["passed"] = all(c["ok"] for c in checks)
+    # SKIP entries are informational only; only real executed checks decide.
+    report["passed"] = bool(checks) and all(c["ok"] for c in checks)
 
     text = json.dumps(report, indent=2)
     print(text)

@@ -73,15 +73,23 @@ curl -fSL "https://files.rcsb.org/download/6ARU.cif" -o data/raw/6ARU.cif
 完整根因/证据见 [reports/stage2_environment_failure_001.md](reports/stage2_environment_failure_001.md)。
 notebook 现自建隔离 Python 3.10 + JAX 0.6.0(CUDA 12.6) 环境，等价官方 install_bindcraft.sh。
 
+尝试 002（同日）：隔离 env 本身健康（jax 0.6.0 / GPU / clear_mem / xla_bridge 全过），但
+preflight 脚本把 `jax.Array.devices()` 返回的 set 当列表索引（`devices()[0]`）而崩——
+**测试脚本 harness bug，非环境问题**。已修复（设备集合迭代 + matmul 四项验证 + SKIP 语义），
+环境与 notebook 均未变；runtime 存活时只需重传 `bindcraft_preflight.py` 重跑 Cell 5/6。
+
 本机制备（本机可复现）：
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 62/62 期望
+python3 -m unittest discover -s tests             # 68/68 期望
 ```
 
 云端执行（用户 A7，首次建环境约 10–25 分钟，之后总时长按实测，免费 T4）：
 
+0. **runtime 仍存活（尝试 002 之后）**：不用 reset、不用重装环境——重跑 Cell 5（这次只需上传
+   修正后的 `scripts/bindcraft_preflight.py` 一个文件，前两个已上传过），再重跑 Cell 6；
+   PASSED 后继续 Cell 7 起。仅当 runtime 已释放才走下面完整流程。
 1. **先 Disconnect and delete runtime**（清掉尝试 001 的 JAX 0.11.1 残留）→ Runtime → Change runtime type → **T4 GPU** → Upload 新版 `cloud/stage2_bindcraft_smoke.ipynb`。
 2. 顺序执行 Cell 1–13，**不要改任何数字**：
    - Cell 2 在 `/content/bindcraft_env` 自建 Miniforge **Python 3.10** 环境：conda-forge/nvidia `jax=0.6.0 jaxlib=0.6.0=*cuda*`（`CONDA_OVERRIDE_CUDA=12.6`）、`numpy<2`、`flax<0.10`、ColabDesign pin e31a56f `--no-deps`、PyRosetta cp310 wheel；Colab 系统 Python 3.13/JAX 0.11 不参与任何计算；

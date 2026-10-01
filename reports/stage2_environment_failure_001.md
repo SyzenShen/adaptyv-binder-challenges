@@ -112,3 +112,47 @@ PDL1 65 aa/hotspot 56、默认 filters、4stage multimer 默认（仅 max_trajec
 - conda-forge jaxlib 0.6.0 构建：https://anaconda.org/conda-forge/jaxlib/files （cuda126 py310）
 - PyPI jaxlib 0.6.0 / numpy 1.26.4 文件清单（cp313 有无）：https://pypi.org/project/jaxlib/0.6.0/ ， https://pypi.org/project/numpy/1.26.4/
 - PyRosetta wheel 索引：https://west.rosettacommons.org/pyrosetta/quarterly/release.cxx11thread.serialization/
+
+## 8. 追加：尝试 002（2026-10-01，用户实测回传）— PRE-FLIGHT TEST-HARNESS BUG
+
+**分类：测试脚本自身缺陷（bindcraft_preflight.py），不是新的 BindCraft/JAX 环境不兼容。**
+
+实测 preflight 状态（隔离 env，真实值，均通过）：
+
+| 项目 | 值 |
+|---|---|
+| Python | 3.10.21 |
+| jax / jaxlib | 0.6.0 / 0.6.0 |
+| numpy / flax | 1.26.4 / 0.9.0 |
+| ColabDesign | 1.1.3 |
+| JAX platform / device | gpu / Tesla T4 |
+| xla_bridge platform | gpu |
+| CUDA platform version | 12060 |
+
+即：§4 的隔离环境**本身健康**——版本门、clear_mem、xla_bridge、GPU 可见性全部通过。
+第一个失败的检查是 `trivial_gpu_matmul`：
+
+```
+TypeError: "'set' object is not subscriptable"
+```
+
+- 根因：`jax.Array.devices()` 返回 `set[Device]`（集合，不可下标），而脚本第 186 行写了
+  `on_gpu = y.devices()[0].platform == "gpu"`（第 190 行 detail 字符串同样索引了一次）。
+  这是 harness bug，与 BindCraft/JAX 环境无关；后续 "GPU matmul not executed" 与
+  "jax_import not executed because an earlier prerequisite failed" 两条是级联的假失败
+  （jax 明明导入成功），属于同一次记录缺陷。
+- 修复（仅改 [scripts/bindcraft_preflight.py](../scripts/bindcraft_preflight.py)，环境与 notebook 不变）：
+  1. 设备集合一律迭代，用 `any(d.platform == "gpu" for d in y.devices())` 语义判定驻留，
+     源码中禁止再出现 `devices()[`（有回归测试看守）；
+  2. `trivial_gpu_matmul` 现在完整验证四件事：`jax.default_backend() == "gpu"`、
+     2048×2048 float32 matmul 实际执行完成、数值结果等于 2048³、结果数组驻留在至少一个
+     GPU 设备上；不因 `devices()` 返回 set 而失败；
+  3. 因前置失败而无法执行的下游检查记入独立的 `"skipped"` 列表（`status: "SKIP"`），
+     不再作为额外根因失败计入 `"checks"`，也不影响 `passed` 判定；同一检查名不再重复出现。
+- 回归测试：`tests/test_stage2.py` 新增 `TestPreflightDeviceSemantics`（set 值设备集合、
+  假 GPU 栈上 matmul 通过/拒绝 CPU backend/拒绝 CPU 驻留/拒绝数值错误、源码禁索引扫描）
+  并强化 jax 缺失场景的 SKIP 语义断言；本地系统 unittest 与 .venv pytest 均 68/68。
+- 环境处置：**无需重建**。当前 Colab runtime（含 `/content/bindcraft_env`）可直接复用，
+  只需重传修正后的 `bindcraft_preflight.py`（Cell 5）并重跑 Cell 6。
+- 未变更项再次确认：Python 3.10、jax/jaxlib 0.6.0、表位 B、hotspot 6 残基、80 aa、
+  全部 BindCraft 科学设置——均未改动。
