@@ -156,3 +156,36 @@ TypeError: "'set' object is not subscriptable"
   只需重传修正后的 `bindcraft_preflight.py`（Cell 5）并重跑 Cell 6。
 - 未变更项再次确认：Python 3.10、jax/jaxlib 0.6.0、表位 B、hotspot 6 残基、80 aa、
   全部 BindCraft 科学设置——均未改动。
+
+## 9. 追加：尝试 003（2026-10-01，用户实测回传）— DOWNLOAD-HARNESS BUG
+
+**分类：notebook 下载流程自身缺陷（Cell 7），不是环境不兼容，也不是靶点问题。**
+
+preflight 修复后，Cell 7 下载 AlphaFold 权重失败。实测状态（30 分钟超时后）：
+无 aria2c/tar 进程；`/content/bindcraft/params` 实际为空（约 4 KB）；`done.txt` 不存在；
+0 个 .npz。即子进程**立即退出**，不是下载慢。
+
+- 根因：旧 Cell 7 用 `subprocess.Popen("aria2c … && tar … && touch done.txt", shell=True)`
+  **发射后不管**（不读 returncode、不读 stderr），随后盲轮询 `done.txt` 30 分钟。
+  子进程秒退（最可能 `aria2c: command not found`——aria2c 在 Colab 基础镜像中不保证存在；
+  本机无法远程核实，即时退出+零字节与此一致，但不排除 aria2 本身秒败），真实错误被完全丢弃。
+- 修复（新脚本 [scripts/fetch_af2_weights.py](../scripts/fetch_af2_weights.py) + Cell 7 整格替换；
+  环境与科学配置不变）：
+  1. 启动前预检 `shutil.which`；aria2c 缺失则 Cell 7 先 `apt-get install -y aria2`，
+     否则 curl/wget 兜底（`--downloader auto`）；
+  2. 子进程完全可观测：记录 PID、returncode、stdout/stderr 落 `download.log`、
+     字节数与耗时，下载中按固定间隔打印进度；
+  3. 非零退出**立即**停止并打印真实日志尾部，不再盲等；
+  4. 断点续传（aria2c `-c` / curl `-C -` / wget `-c`）；半成品 tarball 一律保留，
+     本脚本不删除任何文件；
+  5. 下载后校验：tarball 存在且体积 ≥ 5.0 GB（官方包约 5.3 GB）→ 解包 →
+     **恰好 14 个 .npz** 才写 `done.txt`（内含 url/downloader/rc/字节/耗时/文件清单）；
+  6. `done.txt` 已存在且 14 个 .npz 校验通过则完全跳过下载；`done.txt` 在但载荷
+     不完整则不信它，继续续传修复。
+- 回归测试（`tests/test_stage2.py::TestFetchAf2Weights`，用 PATH 里的假下载器注入，
+  无网络）：下载器缺失、auto 全无、非零退出即停且保留半成品、断点续传标志、
+  14 文件成功解包 + done.txt、已有有效权重跳过、done.txt 失效重取、三种下载器
+  resume flag；notebook 侧断言旧 Popen 模式不得回归。本地系统 unittest 与 .venv
+  pytest 均 77/77。
+- 环境处置：**无需重建**。当前 runtime 复用：重跑 Cell 5（传 `fetch_af2_weights.py`）+
+  整格替换 Cell 7 后运行。

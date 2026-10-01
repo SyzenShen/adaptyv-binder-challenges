@@ -43,17 +43,39 @@
 
 本机可用空间仅 27.5GB。云端方案不受影响，但建议清理出 ≥50GB 余量（系统设置 → 储存空间；清空下载/废纸篓；`brew cleanup`）。不建议为项目购买/外接存储，模型产物本来就不落地本地。
 
-## A7 — 在 Colab 重跑 Stage 2 preflight（阶段 2 当前唯一阻塞；runtime 存活时约 1 分钟）
+## A7 — 在 Colab 重跑 Stage 2 权重下载（阶段 2 当前唯一阻塞；runtime 存活时约 5–15 分钟）
 
-**为什么**：本机是 Intel Mac、无 NVIDIA GPU，BindCraft 必须在 CUDA GPU 上跑。你 10-01 的第一次尝试已证明 Colab 预装环境（Python 3.13 + JAX 0.11.1）跑不了官方流程；第二次尝试证明隔离环境本身健康（jax 0.6.0 / GPU / clear_mem / xla_bridge 全过），只是我的 preflight 脚本把 `jax.Array.devices()` 返回的 set 当列表索引崩了——**脚本 bug，不是环境问题**。已修复并回归（68/68），**环境和 notebook 都没变**。
+**为什么**：本机无 NVIDIA GPU，BindCraft 必须在 CUDA GPU 上跑。三次尝试的定位：①Colab 预装环境（Py3.13 + JAX 0.11.1）跑不了官方流程 → 已由隔离 py3.10/jax 0.6.0 环境修复；②preflight 脚本 set 索引 bug → 已修复；③Cell 7 权重下载用不可观测的 `Popen(aria2c…)` + 盲等 30 分钟，子进程秒退且错误被丢弃 → 已修复为可观测下载脚本。**三次都不是科学配置问题，环境本身已验证健康。**
 
-**最短步骤（当前 runtime 还在）**：
-1. 不用 Disconnect、不用重装。在已打开的 notebook 里**重跑 Cell 5**，这次上传更新后的 `scripts/bindcraft_preflight.py` 一个文件即可（另两个之前传过）。
-2. **重跑 Cell 6**：必须打印 `PRE-FLIGHT PASSED on Tesla T4 | jax 0.6.0`；若报错，停止并把 `preflight.json` 发我，不要继续、不要自行改包。
-3. 通过后从 Cell 7 继续：下载权重 → PDL1 官方示例；PDL1 失败仍算环境问题——停止发我。PDL1 成功（Cell 10 过）后才自动继续 EGFR micro。
-4. OOM：Factory reset 后最多重试一次；第二次仍 OOM 就停。
-5. 完成后把 Drive 文件夹 `BindCraft/stage2_smoke/` 分享给我（或至少回传 `preflight.json`、`env_metadata.json`、`stage2_smoke_report.json`、两个 `.log`、一个 relaxed PDB）。
+**最短步骤（当前 runtime 还在，Python/JAX 环境不重装）**：
+1. **重跑 Cell 5**：上传仓库新增的 `scripts/fetch_af2_weights.py`（另三个文件之前传过；新版 Cell 5 会校验 4 个文件，若你用的还是旧格，少传也不会拦）。
+2. **整格替换 Cell 7**：把仓库新版 [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 里 Cell 7 的代码复制覆盖当前 notebook 的 Cell 7（旧格是盲等下载，必须换掉）。新格内容如下（应与仓库一致）：
 
-**若 runtime 已被释放**：按 [RUNBOOK.md](RUNBOOK.md) §7 完整流程重跑（Disconnect and delete → T4 → 上传 notebook → 逐格执行，Cell 2 重建环境 10–25 分钟）。
+   ```python
+   # --- observable AF2 weight download (attempt-003 harness fix) ---
+   # aria2c is not guaranteed in the Colab base image; verify/install BEFORE use
+   if shutil.which('aria2c') is None:
+       print('aria2c absent in Colab base image; installing via apt-get ...')
+       ap = subprocess.run('apt-get -qq update && apt-get -qq install -y aria2',
+                           shell=True, capture_output=True, text=True)
+       print((ap.stdout + ap.stderr)[-1500:])
+   DOWNLOADER = 'aria2c' if shutil.which('aria2c') else 'auto'
+   dl = subprocess.run([sys.executable, '/content/fetch_af2_weights.py',
+                        '--params-dir', '/content/bindcraft/params',
+                        '--downloader', DOWNLOADER])
+   assert dl.returncode == 0, ('AF2 weight download failed; real error printed above '
+                               'and in /content/bindcraft/params/download.log — STOP')
+   weight_files = sorted(f for f in os.listdir('/content/bindcraft/params') if f.endswith('.npz'))
+   print(weight_files)
+   assert len(weight_files) == 14, f'expected 14 AF2 .npz files, got {len(weight_files)}'
+   ```
+   （注意：该格后半段原有的 env_metadata 保存代码要保留——以仓库新版整格为准最稳妥。）
+
+3. **运行 Cell 7**：会周期性打印进度；看到 `OK: 14 .npz files validated` 即成功。若失败，错误会**立即**打印真实日志——停止，把输出和 `/content/bindcraft/params/download.log` 发我，不要继续、不要自行改包。
+4. 从 Cell 8 继续：PDL1 官方示例 → 成功（Cell 10 过）后才自动跑 EGFR micro。
+5. OOM：Factory reset 后最多重试一次；第二次仍 OOM 就停。
+6. 完成后把 Drive 文件夹 `BindCraft/stage2_smoke/` 分享给我（或至少回传 `preflight.json`、`env_metadata.json`、`stage2_smoke_report.json`、两个 `.log`、一个 relaxed PDB）。
+
+**若 runtime 已被释放**：按 [RUNBOOK.md](RUNBOOK.md) §7 完整流程重跑（Disconnect and delete → T4 → 上传新版 notebook → 逐格执行，Cell 2 重建环境 10–25 分钟，Cell 5 传 4 个文件）。
 
 **完成标志**：我拿到上述真实产物并写出 Stage 2 smoke 报告（环境 vs 靶点故障判定 + B 接触/迁移/边缘结论 + 仅按实测吞吐的批次建议）。在此之前 EGFR 生产生成、broad hotspot、付费计算一律不启动。

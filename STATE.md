@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-01 ｜ 阶段：**2 云端 smoke test — 尝试 001 环境失败已修复（隔离 py3.10/jax 0.6.0）；尝试 002 暴露 preflight 脚本 harness bug（devices() set 索引），已修复，环境无需重建，等待用户重传 preflight.py 重跑 Cell 6（A7）**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，但 PDL1 未产出 relaxed 轨迹、EGFR 0 轨迹，时长/吞吐/成功率仍为 null；不启动 EGFR 生产生成。阻塞项 A7 Colab preflight 重跑、A6 Slack 截图、A3 资格确认
+最后更新：2026-10-01 ｜ 阶段：**2 云端 smoke test — 尝试 001 环境失败（JAX 0.11.1）与尝试 002/003 两处 harness bug（preflight set 索引、权重下载盲轮询）均已修复并回归 77/77，环境无需重建，等待用户重跑 Cell 5/7（A7）**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，但 PDL1 未产出 relaxed 轨迹、EGFR 0 轨迹，时长/吞吐/成功率仍为 null；不启动 EGFR 生产生成。阻塞项 A7 Colab 权重下载重跑、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -57,13 +57,14 @@
 - **云端尝试 001（用户 2026-10-01 实测，真实结果）**：Tesla T4 / 15360 MiB；Colab 镜像 Python 3.13.15 + CUDA 12.8 + 预装 JAX/jaxlib 0.11.1 + ColabDesign 1.1.3；PyRosetta、AF2 权重安装成功。PDL1 在 relaxed 轨迹前崩于 `jax.lib.xla_bridge.get_backend()`（ColabDesign clear_mem）——**ENVIRONMENT_FAILURE**。根因与证据：[stage2_environment_failure_001.md](reports/stage2_environment_failure_001.md)（xla_bridge 在 JAX 0.8.0 移除；官方脚本约束 jax ≤0.6.0、py3.10、numpy<2；numpy 1.26.4 无 cp313 wheel）。
 - **修复 001（D-017，未打上游补丁）**：notebook 改为在 Colab 内自建隔离 Miniforge **Python 3.10** 环境（conda-forge/nvidia `jax=0.6.0 jaxlib=0.6.0=*cuda*`，`CONDA_OVERRIDE_CUDA=12.6`，`numpy<2`、`flax<0.10`，ColabDesign pin e31a56f `--no-deps`，PyRosetta cp310 wheel），BindCraft 子进程全部走 env python；新增硬门 [bindcraft_preflight.py](scripts/bindcraft_preflight.py)（权重下载前验证版本/clear_mem/xla_bridge/GPU matmul）。科学配置零改动。
 - **云端尝试 002 preflight（用户 2026-10-01 实测，真实结果）**：隔离 env 本身健康（jax 0.6.0 / GPU / clear_mem 过 / xla_bridge 过），但 `trivial_gpu_matmul` 检查因 `jax.Array.devices()` 返回 `set[Device]` 被错误地用 `[0]` 索引而崩溃——**PRE-FLIGHT TEST-HARNESS BUG**（不是新的环境不兼容）。级联记录缺陷导致额外两条假失败。已修复：`devices()` 全部迭代处理、matmul 检查验证 4 项条件（gpu backend + 完成 + 数值 + GPU 驻留）、下游不可执行检查记入 `"skipped"`（SKIP 语义），环境与 notebook 不变。
+- **云端尝试 003 权重下载（用户 2026-10-01 实测，真实结果）**：preflight 修复后 Cell 7 下载 AF2 权重失败——旧代码用 `subprocess.Popen("aria2c … && tar … && touch done.txt")` 发射后不管，再盲轮询 30 分钟；子进程实际**立即退出**（无 aria2c/tar 进程、params≈4 KB、done.txt=false、0 个 .npz），返回码与 stderr 被完全丢弃——**DOWNLOAD-HARNESS BUG**。aria2c 是否存在于 Colab 基础镜像无法从本机远程判定（即时退出+零字节与 command-not-found 一致）；新 Cell 7 会先 `shutil.which` 预检、缺失则 apt 安装 aria2，失败时立即打印真实日志。已修复：新脚本 [fetch_af2_weights.py](scripts/fetch_af2_weights.py)（预检/观测子进程 PID+rc+log+字节+时长/进度打印/非零即停/断点续传/体积合理性+恰好 14 个 .npz 才写 done.txt/已有效则跳过），Cell 5 改为上传 4 个文件。环境与科学配置不变。
 - **GPU/VRAM 已实测：T4 15360 MiB（free 值复测时由 preflight/元数据回填）；轨迹时长/峰值占用/吞吐/成功率仍 null（0 条 relaxed 轨迹，禁止推测）**。未创建 compute_escalation.md（无 OOM 证据）。
 - Slack 凭据：[reports/slack_provenance/INDEX.md](reports/slack_provenance/INDEX.md)，7 条主张全部 PENDING（用户尚未提供截图）。
-- 测试 68/68（[test_stage2.py](tests/test_stage2.py) 新增至 32 个，含 JAX 版本策略、notebook 隔离环境回归、preflight 设备语义回归）。
+- 测试 77/77（[test_stage2.py](tests/test_stage2.py) 新增至 41 个，含 JAX 版本策略、preflight 设备语义、下载 harness 五场景回归）。
 
 ## 当前 Blockers（真实阻挡）
 
-1. **CLOUD_SMOKE_ATTEMPT_002_HARNESS_FIXED / AWAITING_PREFLIGHT_RERUN** — 尝试 001 为 Colab 环境失败（JAX 0.11.1），已通过隔离 py3.10/jax 0.6.0 环境修复；尝试 002 暴露的是 preflight 脚本自身缺陷（`devices()` set 被索引），已修复并回归 68/68。**环境无需重建**：用户在当前 runtime 上重传 `scripts/bindcraft_preflight.py`（Cell 5）并重跑 Cell 6 即可；PDL1 relaxed 轨迹未取得前阶段 3 不得开始。
+1. **CLOUD_SMOKE_ATTEMPT_003_HARNESS_FIXED / AWAITING_WEIGHTS_RERUN** — 尝试 001 环境失败（JAX 0.11.1）→ 已由隔离 py3.10/jax 0.6.0 修复；尝试 002 preflight 脚本 set 索引 bug → 已修复；尝试 003 权重下载 harness bug（unobserved Popen + 盲轮询）→ 已修复为可观测下载脚本。**Python/JAX 环境无需重建**：当前 runtime 复用，重跑 Cell 5（上传新增的 `scripts/fetch_af2_weights.py`，共 4 个文件）+ 用新版 Cell 7 代码替换旧格后重跑即可；PDL1 relaxed 轨迹未取得前阶段 3 不得开始。
 2. **MOUSE_CONSTRUCT_PROOF_PENDING** — mouse 25–647 仅 Slack 转述（A2/A6）；不阻塞 human smoke，阻塞阶段 4 mouse 验证。
 3. **SLACK_PROVENANCE_PENDING (A6)** — 7 条 Slack 主张无截图（含上条）；[INDEX](reports/slack_provenance/INDEX.md) 全 PENDING。
 4. **ELIGIBILITY/REGISTRATION_PENDING** — Track 3 资格/注册用户尚未确认（A3）；不阻塞技术 smoke，阻塞提交。
@@ -76,7 +77,7 @@
 
 ## 下一动作（按优先级）
 
-1. **A7（用户，重跑 preflight）**：当前 Colab runtime（含已建好的 `/content/bindcraft_env`）**可直接复用，无需 factory reset / 重装环境**：在已打开的 [stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 里重跑 Cell 5（这次只需上传修正后的 `scripts/bindcraft_preflight.py` 一个文件），再重跑 Cell 6；确认打印 `PRE-FLIGHT PASSED ... jax 0.6.0` 后继续顺序执行，回传 `BindCraft/stage2_smoke/`（preflight.json、env_metadata.json、stage2_smoke_report.json、两个 log、relaxed PDB）。若 runtime 已被释放，再按 RUNBOOK §7 完整重跑。
+1. **A7（用户，重跑权重下载）**：当前 Colab runtime（含 `/content/bindcraft_env`）**可直接复用，Python/JAX 环境无需重装**：①重跑 Cell 5，上传仓库新版 `scripts/fetch_af2_weights.py`（另三个文件已传过；新版 Cell 5 会校验 4 个文件）；②把 Cell 7 整格替换为仓库新版 [stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 中的 Cell 7（可观测下载 harness），然后运行；③看到 `OK: 14 .npz files validated` 后从 Cell 8 继续。回传 `BindCraft/stage2_smoke/`（preflight.json、env_metadata.json、stage2_smoke_report.json、两个 log、relaxed PDB）。若 runtime 已被释放，按 RUNBOOK §7 完整重跑。
 2. 我收到实测产物后写 Stage 2 smoke 报告：环境 vs 靶点故障判定、B 接触/迁移/边缘伪影诊断、仅按实测吞吐给批次建议；若 OOM 两次才写 compute_escalation.md。
 3. A6 Slack 截图；A3 Track 3 资格确认（一次性问题，见 HUMAN_ACTIONS）。
 4. smoke 报告经用户复核前不扩大生成、不跑 broad hotspot、不付费。

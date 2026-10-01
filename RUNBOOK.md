@@ -78,27 +78,37 @@ preflight 脚本把 `jax.Array.devices()` 返回的 set 当列表索引（`devic
 **测试脚本 harness bug，非环境问题**。已修复（设备集合迭代 + matmul 四项验证 + SKIP 语义），
 环境与 notebook 均未变；runtime 存活时只需重传 `bindcraft_preflight.py` 重跑 Cell 5/6。
 
+尝试 003（同日）：Cell 7 用 `subprocess.Popen("aria2c … && tar … && touch done.txt")` 发射后
+不管 + 盲轮询 30 分钟；子进程实际立即退出（params≈4 KB、done.txt=false），rc/stderr 全被
+丢弃——**下载 harness bug**。已修复：Cell 7 改为调用
+[scripts/fetch_af2_weights.py](scripts/fetch_af2_weights.py)（下载器预检、aria2c 缺失时
+apt 安装、观测 PID/rc/日志/字节/时长、进度打印、非零即停、断点续传、恰好 14 个 .npz 才写
+done.txt、已有效则跳过）；Cell 5 上传文件增至 4 个。环境与科学配置不变。
+
 本机制备（本机可复现）：
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 68/68 期望
+python3 -m unittest discover -s tests             # 77/77 期望
 ```
 
 云端执行（用户 A7，首次建环境约 10–25 分钟，之后总时长按实测，免费 T4）：
 
-0. **runtime 仍存活（尝试 002 之后）**：不用 reset、不用重装环境——重跑 Cell 5（这次只需上传
-   修正后的 `scripts/bindcraft_preflight.py` 一个文件，前两个已上传过），再重跑 Cell 6；
-   PASSED 后继续 Cell 7 起。仅当 runtime 已释放才走下面完整流程。
+0. **runtime 仍存活（尝试 003 之后）**：不用 reset、不用重装 Python/JAX 环境——
+   ①重跑 Cell 5，上传新版 `scripts/fetch_af2_weights.py`（新版 Cell 5 共校验 4 个文件，
+   另三个已传过）；②用仓库新版 notebook 的 Cell 7 整格替换当前 notebook 的旧 Cell 7 并运行
+   （旧格是不可观测的 Popen 下载，必须换掉）；③打印 `OK: 14 .npz files validated` 后从
+   Cell 8 继续。仅当 runtime 已释放才走下面完整流程。
 1. **先 Disconnect and delete runtime**（清掉尝试 001 的 JAX 0.11.1 残留）→ Runtime → Change runtime type → **T4 GPU** → Upload 新版 `cloud/stage2_bindcraft_smoke.ipynb`。
 2. 顺序执行 Cell 1–13，**不要改任何数字**：
    - Cell 2 在 `/content/bindcraft_env` 自建 Miniforge **Python 3.10** 环境：conda-forge/nvidia `jax=0.6.0 jaxlib=0.6.0=*cuda*`（`CONDA_OVERRIDE_CUDA=12.6`）、`numpy<2`、`flax<0.10`、ColabDesign pin e31a56f `--no-deps`、PyRosetta cp310 wheel；Colab 系统 Python 3.13/JAX 0.11 不参与任何计算；
-   - Cell 5 上传**三个**文件：`data/processed/6ARU_chainA_domain3_310-481.pdb`、`scripts/analyze_bindcraft_run.py`、`scripts/bindcraft_preflight.py`；
+   - Cell 5 上传**四个**文件：`data/processed/6ARU_chainA_domain3_310-481.pdb`、`scripts/analyze_bindcraft_run.py`、`scripts/bindcraft_preflight.py`、`scripts/fetch_af2_weights.py`；
    - **Cell 6 pre-flight 硬门**（先于 5.3 GB 权重下载）：必须打印 `PRE-FLIGHT PASSED on Tesla T4 | jax 0.6.0 | cuda backend 12.6...`；失败即停，回传 `preflight.json`，不要继续；
+   - **Cell 7 可观测下载**：aria2c 缺失会自动 apt 安装，否则 curl/wget 兜底；任何非零退出立即打印真实日志并停住，不再有 30 分钟盲等；
    - Cell 9 跑**官方最小示例 PDL1（65 aa / hotspot 56 / cap 1）**——失败=环境故障，**停**，不要碰 EGFR；Cell 10 断言 relaxed PDB 存在才放行；
    - Cell 11 才跑 EGFR micro（B 保守 hotspot 6 残基 / 80 aa / cap 3）。
 3. OOM 纪律：Factory reset 后**最多再试 1 次**（累计 2 次）即停；把 preflight.json、env_metadata 与 log 交回，我写 `reports/compute_escalation.md`——该文件在观察到 OOM 前不存在。
-4. 产物落在 Drive `BindCraft/stage2_smoke/`：`preflight.json`、`env_metadata.json`（含 `pip_freeze.txt`/`conda_list.txt`）、`stage2_smoke_report.json`、`*_vram.csv`、两个 `.log`、`Trajectory/` PDB。
+4. 产物落在 Drive `BindCraft/stage2_smoke/`：`preflight.json`、`env_metadata.json`（含 `pip_freeze.txt`/`conda_list.txt`）、`stage2_smoke_report.json`、`*_vram.csv`、两个 `.log`、`Trajectory/` PDB；下载问题另看 runtime 侧 `/content/bindcraft/params/download.log`。
 5. 判读纪律：completed ≠ success；binder 是否接触 B、是否迁移、是否抱裁剪边缘、有无严重 clash 以 analyzer JSON + Cell 13 三维目检为准；接受/拒绝看官方 filters 的 `Accepted/` 与 CSV。
 6. smoke 复核前：不跑 broad（12 残基）配置、不加轨迹数、不改表位、不回退 Colab runtime 版本、不 monkey-patch 上游、不付费；依赖升级先记录实际版本再决定。
 
