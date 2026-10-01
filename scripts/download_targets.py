@@ -38,6 +38,16 @@ TARGETS = [
         "6ARU.cif",
         "PDB 6ARU mmCIF, competition-recommended human structure reference",
     ),
+    (
+        "https://rest.uniprot.org/uniprotkb/P00533.txt",
+        "P00533.txt",
+        "human EGFR UniProt flat-text entry (CARBOHYD/feature evidence)",
+    ),
+    (
+        "https://rest.uniprot.org/uniprotkb/Q01279.txt",
+        "Q01279.txt",
+        "mouse EGFR UniProt flat-text entry (CARBOHYD/feature evidence)",
+    ),
 ]
 
 

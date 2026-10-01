@@ -1,0 +1,51 @@
+{
+  "schema_note": "Planned per-candidate metrics for stages 3-5 (Stage 1.5 Parts F/G). Ranking/inspection only - NOT hard thresholds, not filters. Populate only from real model outputs; missing values stay null with reason.",
+  "assay_construct_context": {
+    "source": "USER_PROVIDED_OFFICIAL_COMPETITION_SLACK 2026-10-01",
+    "tested_design_construct_order": "design - short flexible linker - GFP11 - flexible linker - TwinStrep",
+    "linker_sequence": null,
+    "linker_sequence_reason_null": "not published; do not guess",
+    "linker_length": null,
+    "linker_length_reason_null": "not published; do not guess",
+    "paratope_orientation_recommendation": "place paratope toward N-terminal side, especially for small binders (organizer recommendation)",
+    "expression_readout": "GFP11 split-GFP complementation quantifies expression; expression is a separate axis from binding"
+  },
+  "per_candidate_planned_metrics": {
+    "tag_orientation": [
+      "binder_n_terminal_residue",
+      "binder_c_terminal_residue",
+      "c_terminal_min_distance_to_target_A",
+      "c_terminal_exit_vector_relative_to_target",
+      "interface_residue_fraction_N_third",
+      "interface_residue_fraction_middle_third",
+      "interface_residue_fraction_C_third",
+      "c_terminus_solvent_exposed"
+    ],
+    "developability": [
+      "monomer_self_consistency",
+      "exposed_hydrophobicity",
+      "aggregation_liability_flags",
+      "solubility_proxy_flags",
+      "buried_unsatisfied_polar_groups",
+      "terminal_disorder_proxy",
+      "sequence_liability_scan"
+    ],
+    "buffer_compatibility": [
+      "no_divalent_metal_dependent_contact_3mM_EDTA_inspection"
+    ]
+  },
+  "buffer": {
+    "ph_conditions": [6.5, 7.4],
+    "low_pH_buffer": "MES (replaces HEPES)",
+    "neutral_pH_buffer": "HEPES",
+    "approx_components_mM": {"NaCl": 150, "EDTA": 3, "Tween-20": "present_concentration_unspecified"},
+    "ionic_strength_note": "~physiological monovalent ionic strength; use where later electrostatic methods support it",
+    "modeling_claim_policy": "MES/HEPES/Tween/EDTA must not be claimed as explicitly modeled unless a validated method actually models them",
+    "edta_implication": "3 mM EDTA chelates divalent metals; divalent-metal-dependent binding is undesirable"
+  },
+  "evidence_policy": {
+    "computational_metrics_are_not_KD": true,
+    "expression_prediction_is_not_measured_expression": true,
+    "slack_items_require_screenshot_provenance": true
+  }
+}

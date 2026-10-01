@@ -28,6 +28,7 @@ data/raw/*
 !data/raw/.gitkeep
 !data/raw/*.manifest.json
 !data/raw/*.fasta
+!data/raw/*.txt
 data/processed/*
 !data/processed/.gitkeep
 !data/processed/*.csv

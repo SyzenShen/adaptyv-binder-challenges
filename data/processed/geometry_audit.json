@@ -1,0 +1,818 @@
+{
+  "generated_at_utc": "2026-10-01T08:56:25+00:00",
+  "method": {
+    "sasa": "Shrake-Rupley numpy, 96-point golden sphere, probe 1.4 A",
+    "distances": "minimum heavy-atom distance (all deposited atoms are heavy)",
+    "chains": {
+      "egfr": "A",
+      "fab": [
+        "B",
+        "C"
+      ],
+      "glycans": [
+        "D",
+        "E",
+        "F",
+        "G",
+        "H"
+      ]
+    },
+    "numbering": "UniProt P00533-1; 6ARU label_seq_id = auth_seq_id = UniProt - 24"
+  },
+  "glycan_evidence": {
+    "human_uniprot_CARBOHYD_sites": [
+      56,
+      73,
+      128,
+      175,
+      196,
+      352,
+      361,
+      413,
+      444,
+      528,
+      568,
+      603,
+      623
+    ],
+    "mouse_uniprot_CARBOHYD_sites": [
+      128,
+      175,
+      196,
+      352,
+      413,
+      444,
+      528,
+      568,
+      603,
+      623
+    ],
+    "structurally_glycosylated_in_6ARU": {
+      "352": "D",
+      "361": "F",
+      "413": "G",
+      "444": "E"
+    }
+  },
+  "glycan_patch_summary": {
+    "EPI_H_1": {
+      "N352": {
+        "min_dist_to_Asn_A": 6.29,
+        "min_dist_to_glycan_A": 6.6,
+        "closest_residue": 340
+      },
+      "N361": {
+        "min_dist_to_Asn_A": 3.16,
+        "min_dist_to_glycan_A": 4.27,
+        "closest_residue": 335
+      },
+      "N413": {
+        "min_dist_to_Asn_A": 21.56,
+        "min_dist_to_glycan_A": 22.31,
+        "closest_residue": 332
+      },
+      "N444": {
+        "min_dist_to_Asn_A": 20.06,
+        "min_dist_to_glycan_A": 24.64,
+        "closest_residue": 340
+      }
+    },
+    "EPI_H_2": {
+      "N352": {
+        "min_dist_to_Asn_A": 4.1,
+        "min_dist_to_glycan_A": 7.43,
+        "closest_residue": 385
+      },
+      "N361": {
+        "min_dist_to_Asn_A": 3.74,
+        "min_dist_to_glycan_A": 7.77,
+        "closest_residue": 397
+      },
+      "N413": {
+        "min_dist_to_Asn_A": 6.41,
+        "min_dist_to_glycan_A": 6.55,
+        "closest_residue": 389
+      },
+      "N444": {
+        "min_dist_to_Asn_A": 11.73,
+        "min_dist_to_glycan_A": 10.92,
+        "closest_residue": 389
+      }
+    },
+    "EPI_H_3": {
+      "N352": {
+        "min_dist_to_Asn_A": 10.84,
+        "min_dist_to_glycan_A": 14.67,
+        "closest_residue": 420
+      },
+      "N361": {
+        "min_dist_to_Asn_A": 10.74,
+        "min_dist_to_glycan_A": 13.69,
+        "closest_residue": 422
+      },
+      "N413": {
+        "min_dist_to_Asn_A": 6.52,
+        "min_dist_to_glycan_A": 7.36,
+        "closest_residue": 418
+      },
+      "N444": {
+        "min_dist_to_Asn_A": 6.78,
+        "min_dist_to_glycan_A": 7.78,
+        "closest_residue": 416
+      }
+    },
+    "EPI_H_4": {
+      "N352": {
+        "min_dist_to_Asn_A": 17.99,
+        "min_dist_to_glycan_A": 21.45,
+        "closest_residue": 450
+      },
+      "N361": {
+        "min_dist_to_Asn_A": 15.48,
+        "min_dist_to_glycan_A": 19.49,
+        "closest_residue": 452
+      },
+      "N413": {
+        "min_dist_to_Asn_A": 10.09,
+        "min_dist_to_glycan_A": 12.87,
+        "closest_residue": 451
+      },
+      "N444": {
+        "min_dist_to_Asn_A": 6.32,
+        "min_dist_to_glycan_A": 7.46,
+        "closest_residue": 447
+      }
+    }
+  },
+  "cetuximab_lit_residues_audit": [
+    {
+      "literature_auth_residue": "Q384",
+      "uniprot_pos": 408,
+      "uniprot_aa": "Q",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.43,
+      "closest_atom_pair": "GLN408.O-CASN.ND2"
+    },
+    {
+      "literature_auth_residue": "P387",
+      "uniprot_pos": 411,
+      "uniprot_aa": "P",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 10.75,
+      "closest_atom_pair": "PRO411.N-CASN.ND2"
+    },
+    {
+      "literature_auth_residue": "Q408",
+      "uniprot_pos": 432,
+      "uniprot_aa": "Q",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 2.6,
+      "closest_atom_pair": "GLN432.NE2-CTYR.OH"
+    },
+    {
+      "literature_auth_residue": "H409",
+      "uniprot_pos": 433,
+      "uniprot_aa": "H",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.47,
+      "closest_atom_pair": "HIS433.ND1-CTYR.OH"
+    },
+    {
+      "literature_auth_residue": "F412",
+      "uniprot_pos": 436,
+      "uniprot_aa": "F",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.85,
+      "closest_atom_pair": "PHE436.CE2-CTYR.CE2"
+    },
+    {
+      "literature_auth_residue": "V417",
+      "uniprot_pos": 441,
+      "uniprot_aa": "V",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.59,
+      "closest_atom_pair": "VAL441.CG2-CTYR.CD1"
+    },
+    {
+      "literature_auth_residue": "S418",
+      "uniprot_pos": 442,
+      "uniprot_aa": "S",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.26,
+      "closest_atom_pair": "SER442.OG-CASN.ND2"
+    },
+    {
+      "literature_auth_residue": "K443",
+      "uniprot_pos": 467,
+      "uniprot_aa": "K",
+      "aa_matches": true,
+      "dist_fab_min_heavy_A": 3.39,
+      "closest_atom_pair": "LYS467.CE-CASP.OD1"
+    }
+  ],
+  "patch_fab_distances": {
+    "EPI_H_1": {
+      "min": 12.58,
+      "closest_residue": 340,
+      "residues_within_5A": [],
+      "residues_within_8A": []
+    },
+    "EPI_H_2": {
+      "min": 12.77,
+      "closest_residue": 403,
+      "residues_within_5A": [],
+      "residues_within_8A": []
+    },
+    "EPI_H_3": {
+      "min": 9.11,
+      "closest_residue": 431,
+      "residues_within_5A": [],
+      "residues_within_8A": []
+    },
+    "EPI_H_4": {
+      "min": 8.57,
+      "closest_residue": 460,
+      "residues_within_5A": [],
+      "residues_within_8A": []
+    }
+  },
+  "patch_continuity": {
+    "EPI_H_2_vs_EPI_H_3": {
+      "exposed_SASA_sum_A2": 798.6,
+      "fab_min_A": 12.77,
+      "glycan_min_A": 6.55,
+      "n_exposed_relSASA_gt_0.2": 9,
+      "inter_patch_min_heavy_A": 2.71,
+      "inter_patch_min_CA_A": 3.92,
+      "centroid_CA_distance_A": 10.62,
+      "cross_patch_pairs_lt_5A": [
+        [
+          392,
+          418,
+          4.56
+        ],
+        [
+          392,
+          419,
+          3.32
+        ],
+        [
+          393,
+          418,
+          3.38
+        ],
+        [
+          393,
+          419,
+          4.86
+        ],
+        [
+          395,
+          419,
+          3.01
+        ],
+        [
+          395,
+          420,
+          4.0
+        ],
+        [
+          396,
+          418,
+          3.49
+        ],
+        [
+          396,
+          419,
+          3.15
+        ],
+        [
+          396,
+          421,
+          2.99
+        ],
+        [
+          396,
+          422,
+          3.21
+        ],
+        [
+          398,
+          422,
+          3.47
+        ],
+        [
+          398,
+          423,
+          3.31
+        ],
+        [
+          398,
+          424,
+          4.84
+        ],
+        [
+          399,
+          422,
+          3.63
+        ],
+        [
+          399,
+          423,
+          3.61
+        ],
+        [
+          399,
+          424,
+          2.71
+        ],
+        [
+          399,
+          425,
+          3.04
+        ],
+        [
+          400,
+          423,
+          3.97
+        ],
+        [
+          400,
+          424,
+          4.77
+        ],
+        [
+          400,
+          425,
+          3.44
+        ],
+        [
+          400,
+          427,
+          2.82
+        ],
+        [
+          401,
+          420,
+          4.53
+        ],
+        [
+          401,
+          423,
+          3.97
+        ],
+        [
+          401,
+          425,
+          2.94
+        ],
+        [
+          401,
+          426,
+          3.26
+        ],
+        [
+          401,
+          427,
+          2.85
+        ],
+        [
+          401,
+          428,
+          4.43
+        ],
+        [
+          402,
+          426,
+          4.96
+        ],
+        [
+          402,
+          427,
+          3.14
+        ],
+        [
+          402,
+          428,
+          2.93
+        ],
+        [
+          402,
+          429,
+          2.94
+        ],
+        [
+          402,
+          430,
+          4.36
+        ],
+        [
+          403,
+          426,
+          3.3
+        ],
+        [
+          403,
+          427,
+          4.06
+        ],
+        [
+          403,
+          428,
+          2.85
+        ],
+        [
+          403,
+          429,
+          4.21
+        ],
+        [
+          403,
+          430,
+          3.38
+        ]
+      ],
+      "heavy_closest_pair": "LYS399.O-GLU424.N",
+      "combined_exposed_SASA_A2": 1431.5,
+      "max_CA_extent_A": 31.0
+    },
+    "window_416_431": {
+      "exposed_SASA_sum_A2": 632.9,
+      "fab_min_A": 9.11,
+      "glycan_min_A": 7.36,
+      "n_exposed_relSASA_gt_0.2": 7
+    },
+    "window_416_433_incl_H433": {
+      "exposed_SASA_sum_A2": 821.4,
+      "fab_min_A": 2.6,
+      "glycan_min_A": 7.36,
+      "n_exposed_relSASA_gt_0.2": 8
+    },
+    "window_416_436_incl_F436": {
+      "exposed_SASA_sum_A2": 1003.4,
+      "fab_min_A": 2.6,
+      "glycan_min_A": 7.36,
+      "n_exposed_relSASA_gt_0.2": 10
+    },
+    "window_385_433_combined_with_gap": {
+      "exposed_SASA_sum_A2": 2206.6,
+      "fab_min_A": 2.6,
+      "glycan_min_A": 1.44,
+      "n_exposed_relSASA_gt_0.2": 22
+    },
+    "gap_residues_404_415": [
+      {
+        "uniprot_pos": 404,
+        "residue": "F",
+        "ss": "coil",
+        "rel_sasa": 0.037,
+        "dist_fab_min_heavy_A": 7.43,
+        "dist_glycan_min_heavy_A": 13.25,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 405,
+        "residue": "L",
+        "ss": "coil",
+        "rel_sasa": 0.013,
+        "dist_fab_min_heavy_A": 7.91,
+        "dist_glycan_min_heavy_A": 14.96,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 406,
+        "residue": "L",
+        "ss": "coil",
+        "rel_sasa": 0.031,
+        "dist_fab_min_heavy_A": 3.55,
+        "dist_glycan_min_heavy_A": 11.39,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 407,
+        "residue": "I",
+        "ss": "coil",
+        "rel_sasa": 0.0,
+        "dist_fab_min_heavy_A": 6.99,
+        "dist_glycan_min_heavy_A": 13.31,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 408,
+        "residue": "Q",
+        "ss": "coil",
+        "rel_sasa": 0.348,
+        "dist_fab_min_heavy_A": 3.43,
+        "dist_glycan_min_heavy_A": 11.93,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 409,
+        "residue": "A",
+        "ss": "coil",
+        "rel_sasa": 0.098,
+        "dist_fab_min_heavy_A": 5.63,
+        "dist_glycan_min_heavy_A": 11.37,
+        "closest_glycan_chain": "D"
+      },
+      {
+        "uniprot_pos": 410,
+        "residue": "W",
+        "ss": "coil",
+        "rel_sasa": 0.067,
+        "dist_fab_min_heavy_A": 7.55,
+        "dist_glycan_min_heavy_A": 8.15,
+        "closest_glycan_chain": "E"
+      },
+      {
+        "uniprot_pos": 411,
+        "residue": "P",
+        "ss": "coil",
+        "rel_sasa": 0.079,
+        "dist_fab_min_heavy_A": 10.75,
+        "dist_glycan_min_heavy_A": 6.33,
+        "closest_glycan_chain": "E"
+      },
+      {
+        "uniprot_pos": 412,
+        "residue": "E",
+        "ss": "coil",
+        "rel_sasa": 0.613,
+        "dist_fab_min_heavy_A": 7.83,
+        "dist_glycan_min_heavy_A": 3.26,
+        "closest_glycan_chain": "E"
+      },
+      {
+        "uniprot_pos": 413,
+        "residue": "N",
+        "ss": "coil",
+        "rel_sasa": 0.706,
+        "dist_fab_min_heavy_A": 13.27,
+        "dist_glycan_min_heavy_A": 1.44,
+        "closest_glycan_chain": "G"
+      },
+      {
+        "uniprot_pos": 414,
+        "residue": "R",
+        "ss": "coil",
+        "rel_sasa": 0.34,
+        "dist_fab_min_heavy_A": 13.87,
+        "dist_glycan_min_heavy_A": 3.99,
+        "closest_glycan_chain": "G"
+      },
+      {
+        "uniprot_pos": 415,
+        "residue": "T",
+        "ss": "coil",
+        "rel_sasa": 0.457,
+        "dist_fab_min_heavy_A": 14.34,
+        "dist_glycan_min_heavy_A": 4.44,
+        "closest_glycan_chain": "E"
+      }
+    ],
+    "gap_residues_bridging_both_within_6.5A": [
+      {
+        "uniprot_pos": 404,
+        "d_to_seg1": 1.33,
+        "d_to_seg2": 3.33
+      },
+      {
+        "uniprot_pos": 405,
+        "d_to_seg1": 3.73,
+        "d_to_seg2": 3.62
+      },
+      {
+        "uniprot_pos": 409,
+        "d_to_seg1": 5.94,
+        "d_to_seg2": 6.37
+      },
+      {
+        "uniprot_pos": 410,
+        "d_to_seg1": 3.96,
+        "d_to_seg2": 2.99
+      },
+      {
+        "uniprot_pos": 411,
+        "d_to_seg1": 3.59,
+        "d_to_seg2": 5.12
+      },
+      {
+        "uniprot_pos": 414,
+        "d_to_seg1": 4.7,
+        "d_to_seg2": 3.16
+      }
+    ]
+  },
+  "histidines": {
+    "H370": {
+      "uniprot_pos": 370,
+      "mouse_aa": "H",
+      "mouse_uniprot_pos": "370",
+      "mouse_class": "identical",
+      "ss": "coil",
+      "rel_sasa": 0.155,
+      "sasa_A2": 34.6,
+      "sasa_occluded_by_fab": 0.0,
+      "dist_fab_min_heavy_A": 7.82,
+      "dist_glycan_min_heavy_A": 7.71,
+      "dist_to_each_glycan": {
+        "D": 7.71,
+        "E": 20.13,
+        "F": 18.83,
+        "G": 19.12,
+        "H": 39.33
+      },
+      "dist_to_patches": {
+        "EPI_H_1": 3.23,
+        "EPI_H_2": 7.26,
+        "EPI_H_3": 7.33,
+        "EPI_H_4": 12.99
+      },
+      "neighborhood_8A": {
+        "hydrophobic": [
+          339,
+          340,
+          341,
+          342,
+          349,
+          351,
+          359,
+          365,
+          367,
+          369,
+          371,
+          372,
+          373,
+          374,
+          375,
+          376,
+          392,
+          395,
+          401,
+          404,
+          405,
+          406,
+          407,
+          409,
+          420
+        ],
+        "polar": [
+          348,
+          350,
+          352,
+          355,
+          408,
+          432
+        ],
+        "acidic": [
+          368
+        ],
+        "basic": [
+          431,
+          433
+        ]
+      },
+      "exposed_surface_residues_within_12A_CA": [
+        341,
+        342,
+        349,
+        373,
+        374,
+        408,
+        431,
+        441
+      ],
+      "within_EPI_H_3": false
+    },
+    "H418": {
+      "uniprot_pos": 418,
+      "mouse_aa": "H",
+      "mouse_uniprot_pos": "418",
+      "mouse_class": "identical",
+      "ss": "helix",
+      "rel_sasa": 0.022,
+      "sasa_A2": 5.0,
+      "sasa_occluded_by_fab": 0.0,
+      "dist_fab_min_heavy_A": 16.41,
+      "dist_glycan_min_heavy_A": 7.36,
+      "dist_to_each_glycan": {
+        "D": 18.23,
+        "E": 12.3,
+        "F": 17.5,
+        "G": 7.36,
+        "H": 36.89
+      },
+      "dist_to_patches": {
+        "EPI_H_1": 13.13,
+        "EPI_H_2": 3.38,
+        "EPI_H_3": 0.0,
+        "EPI_H_4": 4.98
+      },
+      "neighborhood_8A": {
+        "hydrophobic": [
+          389,
+          392,
+          394,
+          395,
+          407,
+          410,
+          411,
+          417,
+          419,
+          420,
+          423,
+          445,
+          448,
+          449,
+          450
+        ],
+        "polar": [
+          390,
+          397,
+          413,
+          415,
+          422,
+          447
+        ],
+        "acidic": [
+          391,
+          393,
+          416,
+          421
+        ],
+        "basic": [
+          396,
+          414,
+          451,
+          521
+        ]
+      },
+      "exposed_surface_residues_within_12A_CA": [
+        389,
+        390,
+        391,
+        393,
+        396,
+        413,
+        414,
+        415,
+        421,
+        422
+      ],
+      "within_EPI_H_3": true
+    },
+    "H433": {
+      "uniprot_pos": 433,
+      "mouse_aa": "H",
+      "mouse_uniprot_pos": "433",
+      "mouse_class": "identical",
+      "ss": "helix",
+      "rel_sasa": 0.676,
+      "sasa_A2": 151.4,
+      "sasa_occluded_by_fab": 73.4,
+      "dist_fab_min_heavy_A": 3.47,
+      "dist_glycan_min_heavy_A": 16.19,
+      "dist_to_each_glycan": {
+        "D": 16.19,
+        "E": 25.63,
+        "F": 30.18,
+        "G": 29.29,
+        "H": 36.51
+      },
+      "dist_to_patches": {
+        "EPI_H_1": 11.44,
+        "EPI_H_2": 10.23,
+        "EPI_H_3": 3.35,
+        "EPI_H_4": 8.75
+      },
+      "neighborhood_8A": {
+        "basic": [
+          370,
+          431
+        ],
+        "hydrophobic": [
+          404,
+          406,
+          434,
+          436,
+          439
+        ],
+        "polar": [
+          408,
+          430,
+          432,
+          435,
+          437
+        ]
+      },
+      "exposed_surface_residues_within_12A_CA": [
+        430,
+        431,
+        433,
+        434,
+        435
+      ],
+      "within_EPI_H_3": false
+    }
+  }
+}

@@ -23,6 +23,22 @@
       "retrieved_at_utc": "2026-09-30T18:33:05+00:00",
       "bytes": 1548867,
       "sha256": "6cb216f09a7af6eae45a3f1b7745589ed955e2d65155e1b5f3261e3b88c1e110"
+    },
+    {
+      "file": "P00533.txt",
+      "url": "https://rest.uniprot.org/uniprotkb/P00533.txt",
+      "role": "human EGFR UniProt flat-text entry (CARBOHYD/feature evidence)",
+      "retrieved_at_utc": "2026-10-01T08:50:29+00:00",
+      "bytes": 195241,
+      "sha256": "dc397920cfaaa5e2253e50082bf03a1a02cc518d8f838fe41d798fda2d073b32"
+    },
+    {
+      "file": "Q01279.txt",
+      "url": "https://rest.uniprot.org/uniprotkb/Q01279.txt",
+      "role": "mouse EGFR UniProt flat-text entry (CARBOHYD/feature evidence)",
+      "retrieved_at_utc": "2026-10-01T08:50:31+00:00",
+      "bytes": 47456,
+      "sha256": "a9d54b922fdf91ff26e62fe6b398ca43055fb3e3089b438a8f54363bf7fec2ac"
     }
   ]
 }

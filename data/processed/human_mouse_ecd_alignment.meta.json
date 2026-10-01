@@ -1,0 +1,34 @@
+{
+  "checked_at_utc": "2026-10-01T08:55:29+00:00",
+  "params": {
+    "matrix": "BLOSUM62",
+    "mode": "global",
+    "open_gap_score": -10.0,
+    "extend_gap_score": -0.5
+  },
+  "human": {
+    "acc": "P00533-1",
+    "begin": 25,
+    "end": 645,
+    "length": 621,
+    "source": "competition challenge page"
+  },
+  "mouse": {
+    "acc": "Q01279",
+    "begin": 25,
+    "end": 647,
+    "length": 623,
+    "source": "USER_PROVIDED_OFFICIAL_COMPETITION_SLACK 2026-10-01; challenge page Mouse tab empty on 2026-09-30 and 2026-10-01"
+  },
+  "aligned_columns": 623,
+  "class_counts": {
+    "identical": 551,
+    "conservative": 35,
+    "nonconservative": 35,
+    "gap": 0,
+    "human_only": 0,
+    "mouse_only": 2
+  },
+  "identity_fraction_vs_paired_columns": 0.8873,
+  "note": "Positions taken from the actual alignment; no constant offset. Mouse construct boundary is Slack-derived and must be replaced if the challenge page later publishes a different construct."
+}

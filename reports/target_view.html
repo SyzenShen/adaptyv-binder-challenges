@@ -2,45 +2,87 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>6ARU EGFR ECD - epitope candidates</title>
+<title>6ARU EGFR - Stage 1.5 target/epitope audit view</title>
 <script src="https://cdn.jsdelivr.net/npm/ngl@2/dist/ngl.js"></script>
 <style>
  body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
  #viewport { flex: 1; }
- #panel { width: 320px; padding: 12px; overflow: auto; background: #f7f7f7; }
+ #panel { width: 340px; padding: 12px; overflow: auto; background: #f7f7f7; font-size: 13px; }
+ button { display: block; width: 100%; margin: 4px 0; padding: 6px; cursor: pointer; }
  .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; }
- code { font-size: 12px; }
+ h4 { margin: 12px 0 4px; }
+ code { font-size: 11px; }
 </style>
 </head>
 <body>
 <div id="viewport"></div>
 <div id="panel">
-  <h3>6ARU chain A (EGFR ECD)</h3>
-  <p>Auth numbering = UniProt P00533 &minus; 24. Domain III (auth 286-457,
-  UniProt 310-481) shown in blue. Cetuximab Fab chains B/C in yellow surface;
-  glycan chains D-H in red sticks.</p>
+  <h3>6ARU chain A - Stage 1.5 audit</h3>
+  <p>Auth = UniProt &minus; 24. Domain III <code>286-457</code> white surface;
+  other EGFR domains light grey; Cetuximab Fab B/C translucent yellow;
+  glycan chains D-H red.</p>
+  <h4>Preset views</h4>
+  <button onclick="focusSel(':A and 286-457')">1. Overall Domain III</button>
+  <button onclick="focusSel(':A and (361-379 or 392-407)')">2. Scheme 1 close-up</button>
+  <button onclick="focusSel(':A and (328,337,389,420,361-407) or :D or :E or :F or :G or :H')">3. Glycan-risk view</button>
+  <button onclick="focusSel(':A and (346,394,409)')">4. H433 / pH hotspot</button>
+  <button onclick="focusSel(':A and 361-409 or :B or :C')">5. Cetuximab-overlap view</button>
+  <h4>Legend</h4>
   <div id="legend"></div>
-  <p><small>Internet required: NGL via jsdelivr, structure via rcsb://6ARU.
-  Generated 2026-09-30.</small></p>
+  <p><small>Internet required (NGL via jsdelivr, rcsb://6ARU). Generated 2026-10-01.</small></p>
 </div>
 <script>
-var patches = [{"id": "EPI_H_1", "uniprot": "316-343", "auth": "292-319", "color": "orange"}, {"id": "EPI_H_2", "uniprot": "385-403", "auth": "361-379", "color": "lime"}, {"id": "EPI_H_3", "uniprot": "416-431", "auth": "392-407", "color": "magenta"}, {"id": "EPI_H_4", "uniprot": "447-460", "auth": "423-436", "color": "cyan"}];
-var stage = new NGL.Stage("viewport", {backgroundColor: "white"});
-stage.loadFile("rcsb://6ARU").then(function (o) {
-  o.addRepresentation("cartoon", {sele: ":A", color: "lightgrey"});
-  o.addRepresentation("cartoon", {sele: ":A and 286-457", color: "blue"});
-  o.addRepresentation("surface", {sele: ":B or :C", color: "yellow", opacity: 0.35});
-  o.addRepresentation("licorice", {sele: ":D or :E or :F or :G or :H", color: "red"});
-  var legend = document.getElementById("legend");
-  patches.forEach(function (p) {
-    o.addRepresentation("spacefill", {sele: ":A and " + p.auth, color: p.color});
-    var div = document.createElement("div");
-    div.innerHTML = "<span class='swatch' style='background:" + p.color + "'></span>" +
-      "<b>" + p.id + "</b> UniProt " + p.uniprot + " (auth " + p.auth + ")";
-    legend.appendChild(div);
-  });
-  o.autoView();
+var SEL = {
+  d3: ":A and 286-457",
+  e1: ":A and 292-319",
+  e2: ":A and 361-379",
+  e3: ":A and 392-407",
+  h370: ":A and 346",
+  h418: ":A and 394",
+  h433: ":A and 409",
+  glyAsn: ":A and (328,337,389,420)",
+  fab: ":B or :C",
+  gly: ":D or :E or :F or :G or :H"
+};
+var LEGEND = [
+  ["orange", "Scheme 1: EPI_H_2 (U385-403, auth 361-379)"],
+  ["lime", "Scheme 1: EPI_H_3 (U416-431, auth 392-407)"],
+  ["magenta", "Scheme 2: EPI_H_1 (U316-343, auth 292-319)"],
+  ["red", "H433 (pH mechanism B candidate, U433)"],
+  ["purple", "H370 (partially exposed, U370)"],
+  ["grey", "H418 (buried, U418)"],
+  ["yellow", "N-glycan anchors N352/361/413/444"],
+  ["salmon", "glycan atoms D-H (6ARU deposited)"],
+  ["#ffff66", "Cetuximab Fab B/C (translucent)"]
+];
+var legend = document.getElementById("legend");
+LEGEND.forEach(function (x) {
+  var d = document.createElement("div");
+  d.innerHTML = "<span class='swatch' style='background:" + x[0] + "'></span>" + x[1];
+  legend.appendChild(d);
 });
+
+var stage = new NGL.Stage("viewport", {backgroundColor: "white"});
+var comp;
+stage.loadFile("rcsb://6ARU").then(function (o) {
+  comp = o;
+  o.addRepresentation("cartoon", {sele: ":A", color: "lightgrey"});
+  o.addRepresentation("surface", {sele: SEL.d3, color: "white", opacity: 0.85,
+                                  surfaceType: "av"});
+  o.addRepresentation("spacefill", {sele: SEL.e2, color: "orange"});
+  o.addRepresentation("spacefill", {sele: SEL.e3, color: "lime"});
+  o.addRepresentation("spacefill", {sele: SEL.e1, color: "magenta"});
+  o.addRepresentation("spacefill", {sele: SEL.h433, color: "red", radius: 1.4});
+  o.addRepresentation("spacefill", {sele: SEL.h370, color: "purple", radius: 1.2});
+  o.addRepresentation("spacefill", {sele: SEL.h418, color: "grey", radius: 1.0});
+  o.addRepresentation("spacefill", {sele: SEL.glyAsn, color: "yellow", radius: 1.2});
+  o.addRepresentation("licorice", {sele: SEL.gly, color: "salmon", radius: 1.6});
+  o.addRepresentation("surface", {sele: SEL.fab, color: "yellow", opacity: 0.25});
+  o.addRepresentation("cartoon", {sele: SEL.fab, color: "yellow"});
+  o.autoView(SEL.d3);
+});
+function focusSel(sel) { if (comp) comp.autoView(sel, 900); }
+window.addEventListener("resize", function () { stage.handleResize(); });
 </script>
 </body>
 </html>
