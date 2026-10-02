@@ -7,7 +7,6 @@ Stdlib only (no third-party dependency at test time).
 """
 import ast
 import importlib.util
-import io
 import json
 import os
 import re
@@ -397,15 +396,30 @@ class TestNotebookIsolatedEnvFix(unittest.TestCase):
         egfr = self.indices("job_records['egfr_d3_B_conservative']")[0]
         self.assertLess(pdl1_gate, egfr)
 
-    def test_download_harness_no_fire_and_forget(self):
-        """Attempt-003 regression: the unobserved aria2c Popen + blind
-        30-min poll must never come back; downloads go through the harness."""
+    def test_download_harness_is_observed_and_resumable(self):
+        """Attempt-003/004 regression: the weights cell must never go back to
+        an unobserved fire-and-forget download + blind poll. The current cell
+        uses an inline observed wget harness."""
+        # old broken patterns must not return
         self.assertNotIn("aria2c -q -x 16", self.text)
-        self.assertNotIn("Popen", self.text)
-        self.assertIn("fetch_af2_weights.py", self.text)
-        self.assertIn("shutil.which('aria2c')", self.text)
+        self.assertNotIn("time.sleep(5)", self.text)
+        # observed child process, not fire-and-forget
+        self.assertIn("wget", self.text)
+        self.assertIn("-c", self.text)                  # resume flag
+        self.assertIn("proc.poll()", self.text)
+        self.assertIn("proc.returncode", self.text)
+        self.assertIn("download.log", self.text)
+        # fail-fast on non-zero exit with real log tail
+        self.assertIn("returncode != 0", self.text)
+        # official AF2 set is 15 files, not 14
+        self.assertIn("_multimer_v3.npz", self.text)
+        self.assertIn("_ptm.npz", self.text)
+        self.assertIn("15", self.text)
+        # skip-if-valid path
+        self.assertIn("Skipping", self.text)
+        # Cell 5 no longer requires the removed weight-fetcher script
         upload_cell = self.code[self.indices("files.upload()")[0]]
-        self.assertIn("'/content/fetch_af2_weights.py'", upload_cell)
+        self.assertNotIn("fetch_af2_weights.py", upload_cell)
 
     def test_scientific_settings_untouched(self):
         self.assertIn("'target_hotspot_residues': '390,393,399,421,424,431'",
@@ -415,160 +429,6 @@ class TestNotebookIsolatedEnvFix(unittest.TestCase):
         self.assertIn("'lengths': [65, 65]", self.text)
         self.assertIn("assert diff == {'max_trajectories': (False, n)}",
                       self.text)
-
-
-class TestFetchAf2Weights(unittest.TestCase):
-    """Regression tests for the attempt-003 download-harness bug: Cell 7's
-    unobserved Popen(aria2c && tar && touch done.txt) exited immediately
-    (empty params dir, no process, done.txt=false) and the notebook burned
-    a 30-minute blind poll before noticing.
-    """
-    SCRIPT = SCRIPTS / "fetch_af2_weights.py"
-
-    @classmethod
-    def setUpClass(cls):
-        spec = importlib.util.spec_from_file_location(
-            "fetch_af2_weights", cls.SCRIPT)
-        cls.fw = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(cls.fw)
-
-    def setUp(self):
-        self._td = tempfile.TemporaryDirectory()
-        td = Path(self._td.name)
-        self.params = td / "params"
-        self.params.mkdir()
-        self.bindir = td / "bin"
-        self.bindir.mkdir()
-        self.fixture_tar = td / "fixture.tar"
-        import tarfile
-        with tarfile.open(self.fixture_tar, "w") as tf:
-            for i in range(14):
-                data = b"npz-payload-%02d" % i
-                info = tarfile.TarInfo(f"model_{i:02d}.npz")
-                info.size = len(data)
-                tf.addfile(info, io.BytesIO(data))
-
-    def tearDown(self):
-        self._td.cleanup()
-
-    def _fake(self, name, body):
-        path = self.bindir / name
-        path.write_text("#!/bin/sh\n" + body)
-        path.chmod(0o755)
-        return path
-
-    def _run(self, extra_args=(), path=None, extra_env=None, system_path=True):
-        base = str(path if path is not None else self.bindir)
-        if system_path:                      # fake downloaders need cp/printf
-            base += os.pathsep + "/usr/bin:/bin"
-        env = {"PATH": base}
-        env.update(extra_env or {})
-        return subprocess.run(
-            [sys.executable, str(self.SCRIPT),
-             "--params-dir", str(self.params),
-             "--progress-interval", "0.1",
-             "--min-bytes", "1",            # fixture tar is tiny, not 5.3 GB
-             *extra_args],
-            capture_output=True, text=True, timeout=120, env=env)
-
-    def test_missing_downloader_fails_fast_with_clear_error(self):
-        empty = self.params.parent / "empty"
-        empty.mkdir()
-        p = self._run(["--downloader", "aria2c"], path=empty,
-                      system_path=False)
-        self.assertEqual(p.returncode, 1)
-        self.assertIn("aria2c", p.stderr)
-        self.assertIn("not found", p.stderr)
-        self.assertFalse((self.params / "done.txt").exists())
-
-    def test_auto_without_any_downloader_lists_what_was_tried(self):
-        empty = self.params.parent / "empty2"
-        empty.mkdir()
-        p = self._run(path=empty, system_path=False)
-        self.assertEqual(p.returncode, 1)
-        self.assertIn("aria2c", p.stderr)
-        self.assertIn("curl", p.stderr)
-
-    def test_nonzero_exit_stops_immediately_and_keeps_partial(self):
-        partial = self.params / self.fw.TARBALL_NAME
-        partial.write_bytes(b"PARTIAL-KEEP-ME")
-        self._fake("aria2c", "echo 'error 22: HTTP 404' >&2\nexit 22\n")
-        p = self._run(["--downloader", "aria2c"])
-        self.assertEqual(p.returncode, 1)
-        self.assertIn("exited 22", p.stderr)
-        self.assertIn("404", p.stderr)          # real log tail, not a timeout
-        self.assertEqual(partial.read_bytes(), b"PARTIAL-KEEP-ME")
-        self.assertFalse((self.params / "done.txt").exists())
-
-    def test_resume_flags_passed_when_partial_exists(self):
-        (self.params / self.fw.TARBALL_NAME).write_bytes(b"PARTIAL")
-        argv_log = self.params.parent / "argv.txt"
-        self._fake("curl",
-                   'printf "%s\\n" "$@" > "$ARGV_LOG"\n'
-                   'out=""\n'
-                   'while [ $# -gt 0 ]; do\n'
-                   '  case "$1" in -o) out="$2"; shift 2;; *) shift;; esac\n'
-                   'done\n'
-                   'cp "$FIXTURE_TAR" "$out"\n')
-        p = self._run(["--downloader", "curl"],
-                      extra_env={"ARGV_LOG": str(argv_log),
-                                 "FIXTURE_TAR": str(self.fixture_tar)})
-        self.assertEqual(p.returncode, 0, p.stderr)
-        argv = argv_log.read_text().split()
-        self.assertIn("-C", argv)
-        self.assertIn("-", argv)
-        self.assertIn("resuming", p.stdout)
-
-    def test_successful_extraction_14_npz_then_done_txt(self):
-        self._fake("curl",
-                   'out=""\n'
-                   'while [ $# -gt 0 ]; do\n'
-                   '  case "$1" in -o) out="$2"; shift 2;; *) shift;; esac\n'
-                   'done\n'
-                   'cp "$FIXTURE_TAR" "$out"\n')
-        p = self._run(["--downloader", "curl"],
-                      extra_env={"FIXTURE_TAR": str(self.fixture_tar)})
-        self.assertEqual(p.returncode, 0, p.stderr)
-        npz = [f for f in os.listdir(self.params) if f.endswith(".npz")]
-        self.assertEqual(len(npz), 14)
-        done = json.loads((self.params / "done.txt").read_text())
-        self.assertEqual(done["returncode"], 0)
-        self.assertEqual(done["downloader"], "curl")
-        self.assertGreater(done["bytes"], 0)
-        self.assertIn("pid", done)
-        self.assertEqual(len(done["npz_files"]), 14)
-
-    def test_existing_valid_weights_skip_download_entirely(self):
-        for i in range(14):
-            (self.params / f"model_{i:02d}.npz").write_bytes(b"x")
-        (self.params / "done.txt").write_text("{}")
-        empty = self.params.parent / "empty3"
-        empty.mkdir()
-        p = self._run(path=empty)          # no downloader on PATH at all
-        self.assertEqual(p.returncode, 0, p.stderr)
-        self.assertIn("SKIP", p.stdout)
-
-    def test_invalid_done_txt_is_not_trusted(self):
-        for i in range(3):
-            (self.params / f"model_{i:02d}.npz").write_bytes(b"x")
-        (self.params / "done.txt").write_text("{}")
-        self._fake("curl",
-                   'out=""\n'
-                   'while [ $# -gt 0 ]; do\n'
-                   '  case "$1" in -o) out="$2"; shift 2;; *) shift;; esac\n'
-                   'done\n'
-                   'cp "$FIXTURE_TAR" "$out"\n')
-        p = self._run(["--downloader", "curl"],
-                      extra_env={"FIXTURE_TAR": str(self.fixture_tar)})
-        self.assertEqual(p.returncode, 0, p.stderr)
-        self.assertIn("ignoring done.txt", p.stdout)
-        self.assertEqual(len([f for f in os.listdir(self.params)
-                              if f.endswith(".npz")]), 14)
-
-    def test_build_command_resume_flags_for_all_downloaders(self):
-        for name, flag in (("aria2c", "-c"), ("curl", "-C"), ("wget", "-c")):
-            cmd = self.fw.build_command(name, "http://x", "/d", "/d/t.tar")
-            self.assertIn(flag, cmd, name)
 
 
 class TestAnalyzerOnSyntheticTemp(unittest.TestCase):
