@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +29,7 @@ import stage2_checkpoint as ckpt
 import stage2_configure as configure
 import stage2_run_job as runner
 import stage2_orchestrate as orchestrate
+import ensure_af2_weights as eaw
 
 ENVELOPE = list(range(390, 404)) + list(range(421, 432))
 EXPOSED_12 = [390, 391, 393, 396, 399, 421, 422, 424, 427, 429, 430, 431]
@@ -888,11 +890,262 @@ class TestResumeAfterReset(unittest.TestCase):
                           .read_text())
 
 
+class TestAF2WeightExactSet(unittest.TestCase):
+    """BUG 006/007: authority is the exact 15-file set, never done.txt."""
+
+    def _populate(self, d, names, content=b"NPZ"):
+        d = Path(d); d.mkdir(parents=True, exist_ok=True)
+        for n in names:
+            (d / n).write_bytes(content)
+        return d
+
+    @property
+    def names(self):
+        return sorted(eaw.REQUIRED_SET)
+
+    def test_exact_15_accepted_K(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self._populate(Path(td) / "p", self.names)
+            ok, rep = eaw.validate_weights(d)
+            self.assertTrue(ok, rep)
+            self.assertEqual(rep["present_count"], 15)
+
+    def test_14_rejected_L(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self._populate(Path(td) / "p", self.names[:-1])
+            ok, rep = eaw.validate_weights(d)
+            self.assertFalse(ok)
+            self.assertEqual(len(rep["missing"]), 1)
+            self.assertEqual(rep["present_count"], 14)
+
+    def test_16_with_extra_rejected_M(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = self._populate(Path(td) / "p",
+                               self.names + ["params_model_6_ptm.npz"])
+            ok, rep = eaw.validate_weights(d)
+            self.assertFalse(ok)
+            self.assertEqual(rep["unexpected"],
+                             ["params_model_6_ptm.npz"])
+
+    def test_empty_member_and_stale_done_txt_rejected_N(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td) / "p"; d.mkdir()
+            (d / "done.txt").write_text("true\n")   # legacy stale marker
+            for n in self.names[:-1]:
+                (d / n).write_bytes(b"NPZ")
+            (d / self.names[-1]).write_bytes(b"")   # truncated download
+            ok, rep = eaw.validate_weights(d)
+            self.assertFalse(ok)
+            self.assertTrue(rep["done_txt_present"])
+            self.assertEqual(rep["missing"] or rep["empty_or_small"],
+                             rep["missing"] or [self.names[-1]])
+            self.assertIn("never authoritative", rep["authority"])
+
+
+class TestAF2WeightProvisioning(unittest.TestCase):
+    NAMES = sorted(eaw.REQUIRED_SET)
+
+    def _npz_dir(self, d, names=None, content=b"NPZBYTES"):
+        d = Path(d); d.mkdir(parents=True, exist_ok=True)
+        for n in (names if names is not None else self.NAMES):
+            (d / n).write_bytes(content)
+        return d
+
+    def _tar_of(self, path, names):
+        path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(path, "w") as tf:
+            for n in names:
+                f = path.parent / n
+                f.write_bytes(b"TAR" + n.encode())
+                tf.add(f, arcname=f"params/{n}")
+                f.unlink()
+        return path
+
+    def test_local_valid_skips_network_O(self):
+        with tempfile.TemporaryDirectory() as td:
+            params = self._npz_dir(Path(td) / "params")
+            binp = Path(td) / "fakebin"; binp.mkdir()
+            poison = binp / "wget"
+            poison.write_text("#!/bin/sh\nexit 42\n")
+            poison.chmod(0o755)
+            env_path = binp / "CALLED"
+            poison.write_text(
+                "#!/bin/sh\ntouch \"$CALLED_MARKER\"\nexit 42\n")
+            os.environ["CALLED_MARKER"] = str(env_path)
+            old = os.environ["PATH"]
+            os.environ["PATH"] = f"{binp}:{old}"
+            try:
+                r = eaw.ensure_weights(
+                    params_dir=params, cache_dir=Path(td) / "cache",
+                    log_dir=Path(td) / "logs")
+            finally:
+                os.environ["PATH"] = old
+                os.environ.pop("CALLED_MARKER", None)
+            self.assertEqual(r["action"], "LOCAL_VALID")
+            self.assertFalse(env_path.exists())   # network never touched
+
+    def test_drive_cache_restore_P(self):
+        with tempfile.TemporaryDirectory() as td:
+            cache = self._npz_dir(Path(td) / "cache" / "alphafold")
+            params = Path(td) / "params"
+            r = eaw.ensure_weights(
+                params_dir=params, cache_dir=cache,
+                log_dir=Path(td) / "logs")
+            self.assertEqual(r["action"], "CACHE_RESTORED")
+            ok, rep = eaw.validate_weights(params)
+            self.assertTrue(ok, rep)
+
+    def test_cached_archive_extracted(self):
+        with tempfile.TemporaryDirectory() as td:
+            cache = Path(td) / "cache" / "alphafold"
+            arch_dir = cache / "archive"
+            self._tar_of(arch_dir / eaw.ARCHIVE_NAME, self.NAMES)
+            params = Path(td) / "params"
+            r = eaw.ensure_weights(
+                params_dir=params, cache_dir=cache,
+                log_dir=Path(td) / "logs")
+            self.assertEqual(r["action"], "ARCHIVE_EXTRACTED")
+            ok, rep = eaw.validate_weights(params)
+            self.assertTrue(ok, rep)
+            self.assertRegex(r["archive_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_archive_with_extra_npz_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            cache = Path(td) / "cache" / "alphafold"
+            self._tar_of(cache / "archive" / eaw.ARCHIVE_NAME,
+                         self.NAMES + ["params_model_9_multimer_v3.npz"])
+            r = eaw.ensure_weights(
+                params_dir=Path(td) / "params", cache_dir=cache,
+                log_dir=Path(td) / "logs", dry_run=True)
+            # dry-run surfaces WOULD_DOWNLOAD only when no local/cache;
+            # a corrupt cached archive must not be treated as valid cache
+            self.assertEqual(r["action"], "WOULD_DOWNLOAD")
+
+    def test_dry_run_does_not_download(self):
+        with tempfile.TemporaryDirectory() as td:
+            binp = Path(td) / "fakebin"; binp.mkdir()
+            poison = binp / "wget"
+            poison.write_text("#!/bin/sh\ntouch \"$CALLED_MARKER\"\nexit 0\n")
+            poison.chmod(0o755)
+            marker = Path(td) / "called"
+            os.environ["CALLED_MARKER"] = str(marker)
+            old = os.environ["PATH"]
+            os.environ["PATH"] = f"{binp}:{old}"
+            try:
+                r = eaw.ensure_weights(
+                    params_dir=Path(td) / "params",
+                    cache_dir=Path(td) / "cache",
+                    log_dir=Path(td) / "logs", dry_run=True)
+            finally:
+                os.environ["PATH"] = old
+                os.environ.pop("CALLED_MARKER", None)
+            self.assertEqual(r["action"], "WOULD_DOWNLOAD")
+            self.assertFalse(marker.exists())
+
+    def _install_fake_wget(self, binp, fixture_tar, fail=False,
+                           marker=None):
+        binp.mkdir(parents=True, exist_ok=True)
+        wget = binp / "wget"
+        if fail:
+            body = ("#!/usr/bin/env python3\nimport sys, os\n"
+                    "open(os.environ['WGET_MARKER'],'w').close()\n"
+                    "sys.exit(7)\n")
+        else:
+            body = (
+                "#!/usr/bin/env python3\n"
+                "import sys, shutil, os\n"
+                "a = sys.argv[1:]\n"
+                "out = a[a.index('-O') + 1]\n"
+                "shutil.copyfile(os.environ['FIXTURE_TAR'], out)\n"
+                "open(os.environ['WGET_MARKER'], 'w').close()\n"
+                "sys.exit(0)\n")
+        wget.write_text(body)
+        wget.chmod(0o755)
+        os.environ["FIXTURE_TAR"] = str(fixture_tar)
+        os.environ["WGET_MARKER"] = str(marker or (binp / "called"))
+
+    def test_observed_download_full_flow(self):
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            fixture = td / "fixture.tar"
+            with tarfile.open(fixture, "w") as tf:
+                for n in self.NAMES:
+                    f = td / n
+                    f.write_bytes(b"DOWNLOADED-" + n.encode())
+                    tf.add(f, arcname=n)
+                    f.unlink()
+            binp = td / "fakebin"
+            marker = td / "called"
+            self._install_fake_wget(binp, fixture, marker=marker)
+            old = os.environ["PATH"]
+            os.environ["PATH"] = f"{binp}:{old}"
+            try:
+                r = eaw.ensure_weights(
+                    params_dir=td / "bindcraft" / "params",
+                    cache_dir=td / "drive" / "cache" / "alphafold",
+                    log_dir=td / "drive" / "logs")
+            finally:
+                os.environ["PATH"] = old
+            self.assertTrue(marker.exists())
+            self.assertEqual(r["action"], "DOWNLOADED", r)
+            d = r["download"]
+            self.assertEqual(d["returncode"], 0)
+            self.assertIsInstance(d["pid"], int)
+            self.assertIn("elapsed_s", d)
+            self.assertGreater(d["bytes_on_disk"], 0)
+            self.assertTrue(Path(d["log_path"]).exists())
+            self.assertRegex(d["archive_sha256"], r"^[0-9a-f]{64}$")
+            self.assertIn("not verified", d["sha256_note"])
+            # provenance persisted on Drive
+            rec = json.loads((td / "drive" / "cache" / "alphafold"
+                              / eaw.RECORD_NAME).read_text())
+            self.assertEqual(rec["returncode"], 0)
+            # archive retained + extracted cache + restored params
+            self.assertTrue((td / "drive" / "cache" / "alphafold"
+                             / "archive" / eaw.ARCHIVE_NAME).is_file())
+            ok, rep = eaw.validate_weights(
+                td / "bindcraft" / "params")
+            self.assertTrue(ok, rep)
+
+    def test_failed_download_is_observed_and_retains_part(self):
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            binp = td / "fakebin"
+            marker = td / "called"
+            self._install_fake_wget(binp, td / "nope.tar", fail=True,
+                                    marker=marker)
+            old = os.environ["PATH"]
+            os.environ["PATH"] = f"{binp}:{old}"
+            try:
+                r = eaw.ensure_weights(
+                    params_dir=td / "params",
+                    cache_dir=td / "cache" / "alphafold",
+                    log_dir=td / "logs")
+            finally:
+                os.environ["PATH"] = old
+            self.assertEqual(r["action"], "FAIL")
+            self.assertEqual(r["stage"], "download")
+            self.assertEqual(r["returncode"], 7)
+            self.assertIn(".part", r["part_path"])
+            self.assertTrue(Path(r["log_path"]).exists())
+
+    def test_orchestrator_dry_run_weights_step(self):
+        with tempfile.TemporaryDirectory() as td:
+            o = orchestrate.Orchestrator(
+                repo_dir=str(ROOT),
+                bindcraft_dir=str(Path(td) / "bindcraft"),
+                bindpy=str(Path(td) / "py"), root=str(Path(td) / "drive"),
+                dry_run=True)
+            self.assertTrue(o.step_weights())
+            self.assertEqual(o.state["weights"]["action"], "WOULD_DOWNLOAD")
+
+
 class TestReliabilityStaticGuards(unittest.TestCase):
     STAGE_MODULES = [
         "stage2_paths.py", "stage2_preflight.py", "stage2_configure.py",
         "stage2_checkpoint.py", "stage2_run_job.py", "stage2_analyze.py",
         "stage2_orchestrate.py", "bindcraft_preflight.py",
+        "ensure_af2_weights.py",
     ]
 
     def test_forbidden_patterns_absent(self):
@@ -902,6 +1155,7 @@ class TestReliabilityStaticGuards(unittest.TestCase):
             self.assertNotIn("== 14", src, name)            # BUG 006
             self.assertNotIn("time.sleep(1800)", src, name)  # BUG 004
             self.assertNotIn("RUNROOT", src, name)          # BUG 009/R
+            self.assertNotIn("aria2c -q -x 16", src, name)  # BUG 005
 
     def test_no_cpu_fallback_language(self):
         src = (SCRIPTS / "stage2_orchestrate.py").read_text()

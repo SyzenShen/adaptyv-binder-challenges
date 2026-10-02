@@ -23,8 +23,8 @@ Colab 运行日志、用户 Drive 中实际持久化的 PDL1 relaxed PDB。
 | 003 | 上游检查失败后连锁报假错，掩盖根因 | 下游探测在依赖不可用时仍当 FAIL | FIXED | 失败根因记 FAIL；不可执行的探测记 `status=SKIP` 并指向根因 |
 | 004 | 权重下载 `Popen` 后 fire-and-forget，盲目 30 分钟轮询，进程死了也不知道 | 下载不可观测 | FIXED | `ensure_af2_weights.py`：阻塞观察下载，记录 pid/rc/耗时/字节/日志 |
 | 005 | `aria2c` 在运行时不一定存在 | 假设预装 | FIXED | 预检下载器；无则用可保证的 `wget -c`（PATH 注入可测试） |
-| 006 | 旧逻辑只数权重文件数（`==14`），官方 tar 实际**恰好 15 个 npz** | 计数过弱，缺/多/改名都会漏判 | FIXED（Checkpoint B） | 校验精确 15 个文件名集合（5 base + 5 `_ptm` + 5 `_multimer_v3`） |
-| 007 | 用陈旧 `done.txt` 判定权重就绪 | 文件标记可被半成品/旧运行留下 | FIXED（Checkpoint B） | done 标记永不权威；以 15 个 npz 实文件 + 校验为准 |
+| 006 | 旧逻辑只数权重文件数（`==14`），官方 tar 实际**恰好 15 个 npz** | 计数过弱，缺/多/改名都会漏判 | FIXED | `ensure_af2_weights.py`：校验精确 15 个文件名集合（5 base + 5 `_ptm` + 5 `_multimer_v3`），回归 K/L/M |
+| 007 | 用陈旧 `done.txt` 判定权重就绪 | 文件标记可被半成品/旧运行留下 | FIXED | done 标记永不权威（仅记录其存在）；以 15 个 npz 实文件精确校验为准，回归 N |
 | 008 | 每次手工上传 4 个项目文件，易漏易错 | 工件获取依赖人工 | FIXED（Checkpoint C） | notebook 按 pin 的 git commit 获取项目工件；手工上传仅作 fallback |
 | 009 | Cell 10 在运行时重启后失败（`RUNROOT` 未定义） | 可执行逻辑依赖前序 cell 的内核变量 | FIXED | 所有路径来自 `stage2_paths.Paths`（`STAGE2_PERSISTENT_ROOT` 可覆盖） |
 | 010 | 门控猜 `RUNROOT/.../Trajectory/Relaxed`，与真实 design_path 脱节 | 路径重复推断 | FIXED | relaxed 目录一律由 config/manifest 里的 `design_path` 推导 |
@@ -38,7 +38,7 @@ Colab 运行日志、用户 Drive 中实际持久化的 PDL1 relaxed PDB。
 
 - `scripts/stage2_paths.py`：唯一路径来源（持久根 + 临时件常量 + 原子 JSON + 哈希）。
 - `scripts/stage2_preflight.py`：GPU/版本/真 matmul 门控（`bindcraft_preflight.py` 为兼容垫片）。
-- `scripts/ensure_af2_weights.py`：本地 → Drive 缓存 → 可观测下载（Checkpoint B）。
+- `scripts/ensure_af2_weights.py`：本地精确 15 文件 → Drive 解包缓存 → Drive 归档 → 可观测 `wget -c` 下载（pid/rc/字节/耗时/日志/观察性 SHA256）。
 - `scripts/stage2_configure.py`：确定性生成两份 target + max1/max3 advanced，仅
   `max_trajectories` 与官方默认不同，并断言差异集合。
 - `scripts/stage2_checkpoint.py`：manifest 生命周期、检查点校验、legacy 检查点诚实采纳。
@@ -87,11 +87,13 @@ Colab 运行日志、用户 Drive 中实际持久化的 PDL1 relaxed PDB。
 stdlib `unittest`：`tests/test_stage2.py`（A–Z 合并回归 + 静态检查），并保持
 `tests/` 其余套件通过；另跑 `.venv` pytest。伪造 subprocess / PATH 注入 / 临时目录 +
 `STAGE2_PERSISTENT_ROOT`；不下载任何权重、不跑 GPU（单元测试/合成数据/dry-run only）。
+当前 **105/105**（Checkpoint B 后；K/L/M/N/O/P + 下载成功/失败/归档/dry-run 已覆盖）。
 
 ## 七、提交检查点
 
 - Checkpoint A：paths/preflight/configure/checkpoint/run_job/analyze/orchestrate + GPU 门 + manifest。
-- Checkpoint B：AF2 缓存/下载器/15 文件校验 + matmul 元素级语义修正。
-- Checkpoint C：薄 notebook + 恢复 UX + 文档。
+  已 push：`f8b9f0d`（ls-remote 已核实）。
+- Checkpoint B：AF2 缓存/下载器/15 文件校验 + matmul 元素级语义修正。已提交（待 push 核实）。
+- Checkpoint C：薄 notebook + 恢复 UX + 文档（待做）。
 
 每个检查点：测试 → commit → push → `git ls-remote` 确认远端 SHA。
