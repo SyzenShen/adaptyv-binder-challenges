@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-02 ｜ 阶段：**2 云端 smoke test — 尝试 001 环境失败（JAX 0.11.1）、尝试 002 preflight set-索引 bug、尝试 003 权重下载 harness bug 均已修复；attempt-004 权重格改为内联可观测 wget harness（15-npz 校验）并回归 69/69，环境无需重建，等待用户替换 Cell 7 重跑（A7）**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，但 PDL1 未产出 relaxed 轨迹、EGFR 0 轨迹，时长/吞吐/成功率仍为 null；不启动 EGFR 生产生成。阻塞项 A7 Colab 权重下载重跑、A6 Slack 截图、A3 资格确认
+最后更新：2026-10-02 ｜ 阶段：**2 云端 smoke test — 可靠性合并进行中：Checkpoint A 已完成（持久路径/preflight GPU 门/确定性配置/manifest 检查点/可观测 run_job/分析包装/单一 orchestrator；BUG 001-015 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；回归 93/93 双套件通过），Checkpoint B（AF2 Drive 缓存+精确 15 文件校验）、Checkpoint C（薄 notebook+恢复 UX+文档）待做；不启动 EGFR 生产生成**；此前 attempt-004 的内联可观测 wget harness（15-npz）已在 B 中模块化；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 重跑（待新薄 notebook 就绪后改为"跑一个恢复 cell"）、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -61,6 +61,14 @@
 - **GPU/VRAM 已实测：T4 15360 MiB（free 值复测时由 preflight/元数据回填）；轨迹时长/峰值占用/吞吐/成功率仍 null（0 条 relaxed 轨迹，禁止推测）**。未创建 compute_escalation.md（无 OOM 证据）。
 - Slack 凭据：[reports/slack_provenance/INDEX.md](reports/slack_provenance/INDEX.md)，7 条主张全部 PENDING（用户尚未提供截图）。
 - 测试 69/69（[test_stage2.py](tests/test_stage2.py)，含 JAX 版本策略、preflight 设备语义、内联下载 harness 回归）。
+
+### 可靠性合并（2026-10-02，Checkpoint A 已完成）
+
+- 触发：用户 23 节合并指令——把 Colab smoke 流程重构为可复现、可重启安全、持久化、幂等；科学冻结，不做 EGFR 生产采样。
+- **Checkpoint A（已提交待 push 核实）**：新增 `scripts/stage2_paths.py`（唯一路径来源，`STAGE2_PERSISTENT_ROOT` 可覆盖，原子 JSON）、`stage2_preflight.py`（GPU 优先门；matmul 改为 A@A 后逐元素 ≈2048，`devices()` 只迭代；`bindcraft_preflight.py` 降为兼容垫片）、`stage2_configure.py`（确定性两份 target + max1/max3，差异断言仅 `max_trajectories`）、`stage2_checkpoint.py`（manifest 生命周期/检查点校验/LEGACY_CHECKPOINT 证据受限采纳/COMPLETED 不可静默覆盖）、`stage2_run_job.py`（先 manifest 后运行、design_path 持久断言、日志+VRAM 落 Drive、OOM 分类）、`stage2_analyze.py`（复用既有几何引擎，不复制逻辑）、`stage2_orchestrate.py`（GPU_UNAVAILABLE 受控阻断 rc=2，绝不 CPU；PDL1 门=rc0+relaxed PDB；持久 JSON+MD 报告）。
+- 报告：[stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)（BUG 001–015 台账，FIXED/证据/待 B/C 标注）。
+- 回归测试扩至 **93/93**（系统 unittest discover 与 .venv pytest 双跑）：覆盖 Q（路径来自 config）、R（无 RUNROOT 依赖）、S（模拟 runtime reset 后检查点复用）、T（完成即跳过）、U（配置哈希不匹配强制重跑）、V（零 MPNN 接受仍过门）、W（PDL1 失败阻断 EGFR）、X（非持久 design_path 拒跑）、Y（无 GPU=GPU_UNAVAILABLE，rc 2，建环境前停）、Z（不静默覆盖 COMPLETED）及静态模式守卫。
+- 待做：Checkpoint B（`ensure_af2_weights.py`：本地→Drive 缓存→可观测 `wget -c`，精确 15 npz 文件名集合校验，done.txt 不权威）；Checkpoint C（薄 A–H notebook、按 pin commit 取项目工件、README/STATE/RUNBOOK/HUMAN_ACTIONS/DECISIONS 文档与 reset 恢复指引）。
 
 ## 当前 Blockers（真实阻挡）
 

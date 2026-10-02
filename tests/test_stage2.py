@@ -22,6 +22,13 @@ CFG = ROOT / "configs" / "bindcraft"
 CLOUD = ROOT / "cloud"
 SCRIPTS = ROOT / "scripts"
 
+sys.path.insert(0, str(SCRIPTS))
+import stage2_paths as sp
+import stage2_checkpoint as ckpt
+import stage2_configure as configure
+import stage2_run_job as runner
+import stage2_orchestrate as orchestrate
+
 ENVELOPE = list(range(390, 404)) + list(range(421, 432))
 EXPOSED_12 = [390, 391, 393, 396, 399, 421, 422, 424, 427, 429, 430, 431]
 AA3 = {"Q": "GLN", "E": "GLU", "D": "ASP", "K": "LYS",
@@ -268,13 +275,17 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
         self.assertFalse(self.pf.array_on_gpu(self.FakeArray(["cpu"])))
         self.assertFalse(self.pf.array_on_gpu(self.FakeArray([])))
 
-    def _fake_jax_stack(self, backend, platforms, value=None):
+    def _fake_jax_stack(self, backend, platforms, element=2048.0):
         class FakeScalar:
+            def __float__(self):
+                return float(element)
+
+        class FakeResult:
+            def __getitem__(self, idx):
+                return FakeScalar()       # EACH element of ones@ones == 2048
+
             def block_until_ready(self):
                 return self
-
-            def __float__(self):
-                return float(2048 ** 3) if value is None else value
 
             def devices(self):
                 return {TestPreflightDeviceSemantics.FakeDevice(p)
@@ -282,10 +293,7 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
 
         class FakeMat:
             def __matmul__(self, other):
-                return self
-
-            def sum(self):
-                return FakeScalar()
+                return FakeResult()
 
         class FakeJNP:
             float32 = "float32"
@@ -305,10 +313,22 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
         jax, jnp = self._fake_jax_stack("gpu", ["gpu"])
         ok, detail, info = self.pf.run_gpu_matmul_check(jax, jnp)
         self.assertTrue(ok, detail)
-        self.assertTrue(info["numerically_correct"])
+        self.assertTrue(info["element_ok"])
         self.assertEqual(info["backend"], "gpu")
-        self.assertEqual(info["sum"], float(2048 ** 3))
+        self.assertAlmostEqual(info["element_value"], 2048.0)
+        self.assertEqual(info["expected_element"], 2048)
+        # the sum (2048**3) is recorded for reference but is NOT the criterion
+        self.assertEqual(info["expected_sum"], float(2048 ** 3))
         self.assertTrue(info["gpu_devices"])
+
+    def test_matmul_check_verifies_each_element_not_sum(self):
+        """Consolidation §9: ones @ ones gives EACH element == 2048. A probe
+        that only checked the sum (2048**3) would miss per-element error."""
+        jax, jnp = self._fake_jax_stack("gpu", ["gpu"], element=1.0)
+        ok, detail, info = self.pf.run_gpu_matmul_check(jax, jnp)
+        self.assertFalse(ok)
+        self.assertIn("element", detail)
+        self.assertFalse(info["element_ok"])
 
     def test_matmul_check_rejects_cpu_default_backend(self):
         jax, jnp = self._fake_jax_stack("cpu", ["cpu"])
@@ -321,13 +341,6 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
         ok, detail, _ = self.pf.run_gpu_matmul_check(jax, jnp)
         self.assertFalse(ok)
         self.assertIn("not resident", detail)
-
-    def test_matmul_check_rejects_wrong_numbers(self):
-        jax, jnp = self._fake_jax_stack("gpu", ["gpu"], value=1.0)
-        ok, detail, info = self.pf.run_gpu_matmul_check(jax, jnp)
-        self.assertFalse(ok)
-        self.assertIn("numerically wrong", detail)
-        self.assertFalse(info["numerically_correct"])
 
 
 class TestNotebookIsolatedEnvFix(unittest.TestCase):
@@ -464,6 +477,436 @@ class TestAnalyzerOnSyntheticTemp(unittest.TestCase):
             self.assertEqual(r["binder_length"], 80)
             self.assertEqual(r["B_res_contacted"], [390, 393])
             self.assertFalse(r["migrated_off_B"])
+
+
+# ===========================================================================
+# Reliability consolidation — Checkpoint A regressions (reports/...§17)
+# ===========================================================================
+
+OFFICIAL_ADV = {
+    "design_algorithm": "4stage", "use_multimer_design": True,
+    "predict_initial_guess": False, "rm_template_sc_design": False,
+    "omit_AAs": "C", "max_trajectories": False,
+}
+
+
+def make_fake_bindcraft(td):
+    bd = Path(td) / "bindcraft"
+    (bd / "settings_advanced").mkdir(parents=True)
+    (bd / "settings_advanced" /
+     "default_4stage_multimer.json").write_text(json.dumps(OFFICIAL_ADV))
+    (bd / "example").mkdir(parents=True)
+    (bd / "example" / "PDL1.pdb").write_text("FAKE-PDL1")
+    return bd
+
+
+def make_relaxed(design_path, name="PDL1_smoke_l65_s909721.pdb",
+                 content="ATOM relaxed placeholder\nEND\n"):
+    rdir = Path(design_path) / "Trajectory" / "Relaxed"
+    rdir.mkdir(parents=True, exist_ok=True)
+    p = rdir / name
+    p.write_text(content)
+    return p
+
+
+class TestStage2Paths(unittest.TestCase):
+    def test_env_override_and_layout(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "drive"
+            os.environ["STAGE2_PERSISTENT_ROOT"] = str(root)
+            try:
+                paths = sp.Paths()
+                self.assertEqual(paths.root, root)
+                paths.ensure()
+                for d in ("checkpoints", "configs", "logs", "metadata",
+                          "reports", "cache"):
+                    self.assertTrue((root / "persistent" / d).is_dir())
+                self.assertTrue((root / sp.JOB_PDL1).is_dir())
+                self.assertTrue((root / sp.JOB_EGFR).is_dir())
+                self.assertEqual(
+                    paths.manifest_path(sp.JOB_PDL1),
+                    root / "persistent" / "checkpoints" / sp.JOB_PDL1
+                    / "run_manifest.json")
+                self.assertEqual(
+                    paths.af_cache_dir,
+                    root / "persistent" / "cache" / "alphafold")
+            finally:
+                del os.environ["STAGE2_PERSISTENT_ROOT"]
+
+    def test_persistence_predicate(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=td)
+            self.assertTrue(paths.is_persistent(Path(td) / "job" / "x.pdb"))
+            self.assertFalse(paths.is_persistent("/tmp/somewhere-else/x"))
+
+    def test_atomic_json_and_hashes(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=td)
+            p = paths.write_json(paths.metadata_dir / "m.json", {"a": 1})
+            self.assertEqual(paths.read_json(p), {"a": 1})
+            self.assertIsNone(paths.read_json(Path(td) / "missing.json"))
+            (Path(td) / "bad.json").write_text("{not json")
+            self.assertIsNone(paths.read_json(Path(td) / "bad.json"))
+            f = Path(td) / "f"; f.write_bytes(b"abc")
+            self.assertEqual(sp.sha256_file(f), sp.sha256_text("abc"))
+            self.assertEqual(sp.sha256_json({"b": 2, "a": 1}),
+                             sp.sha256_json({"a": 1, "b": 2}))
+
+    def test_relaxed_dir_uses_design_path_Q(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=td)
+            custom = Path(td) / "custom_job"
+            self.assertEqual(paths.relaxed_dir(sp.JOB_PDL1, str(custom)),
+                             custom / "Trajectory" / "Relaxed")
+            # default falls back to job dir, never to a notebook RUNROOT
+            self.assertEqual(paths.relaxed_dir(sp.JOB_PDL1),
+                             paths.job_dir(sp.JOB_PDL1) / "Trajectory"
+                             / "Relaxed")
+
+
+class TestDeterministicConfigure(unittest.TestCase):
+    def test_write_all_is_deterministic_and_only_changes_cap(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd = make_fake_bindcraft(td)
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            m1 = configure.write_all(paths, bindcraft_dir=str(bd))
+            h1 = {t: (m1[t]["target_config_sha256"],
+                      m1[t]["advanced_config_sha256"]) for t in m1}
+            # regenerate into a fresh ephemeral checkout -> identical hashes
+            bd2 = make_fake_bindcraft(Path(td) / "ephemeral2")
+            m2 = configure.write_all(paths, bindcraft_dir=str(bd2))
+            for t in m2:
+                self.assertEqual(m2[t]["target_config_sha256"], h1[t][0])
+                self.assertEqual(m2[t]["advanced_config_sha256"], h1[t][1])
+            # frozen science
+            self.assertEqual(m1[sp.JOB_PDL1]["hotspots"], "56")
+            self.assertEqual(m1[sp.JOB_PDL1]["lengths"], [65, 65])
+            self.assertEqual(m1[sp.JOB_EGFR]["hotspots"],
+                             "390,393,399,421,424,431")
+            self.assertEqual(m1[sp.JOB_EGFR]["lengths"], [80, 80])
+            self.assertEqual(m1[sp.JOB_EGFR]["max_trajectories"], 3)
+            # design_path is persistent and per-job
+            for t, cap in ((sp.JOB_PDL1, 1), (sp.JOB_EGFR, 3)):
+                self.assertTrue(m1[t]["design_path"].endswith(t + "/"))
+                self.assertTrue(paths.is_persistent(m1[t]["design_path"]))
+                adv = json.loads((bd / m1[t]["advanced_config_name"]).read_text())
+                diff = configure.advanced_diff(OFFICIAL_ADV, adv)
+                self.assertEqual(diff, {"max_trajectories": (False, cap)})
+                # manifest on disk
+                self.assertEqual(paths.read_json(paths.config_manifest), m1)
+
+    def test_build_advanced_refuses_non_default_base(self):
+        bad = dict(OFFICIAL_ADV, predict_initial_guess=True)
+        with self.assertRaises(ValueError):
+            configure.build_advanced(bad, 1)
+
+
+class TestCheckpointSemantics(unittest.TestCase):
+    def _completed(self, design_path, rc=0, accepted=0, hashes=None,
+                   commit="7713aa0d0d351e4117a8befeb8541f3a8ebd3368"):
+        m = ckpt.new_manifest(
+            "run", sp.JOB_PDL1, design_path=str(design_path),
+            bindcraft_commit=commit,
+            advanced_config_sha256=(hashes or {}).get("a", "hA"),
+            target_config_sha256=(hashes or {}).get("t", "hT"))
+        m.update(status="COMPLETED", returncode=rc,
+                 final_design_count=accepted)
+        return m
+
+    def test_relaxed_discovery_uses_config_path_Q(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive")
+            custom = Path(td) / "elsewhere" / sp.JOB_PDL1
+            p = make_relaxed(custom)
+            self.assertEqual(ckpt.relaxed_pdbs(str(custom)), [p])
+            self.assertEqual(ckpt.relaxed_pdbs(paths.job_dir(sp.JOB_PDL1)),
+                             [])           # guessing the default path fails
+            (p.parent / "EMPTY.pdb").write_text("")
+            self.assertEqual(ckpt.relaxed_pdbs(str(custom)), [p])
+
+    def test_valid_checkpoint_T_and_sha_tamper(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            dp = paths.job_dir(sp.JOB_PDL1)
+            p = make_relaxed(dp)
+            m = self._completed(dp)
+            m["relaxed_pdb_paths"] = [str(p)]
+            m["relaxed_pdb_sha256"] = {str(p): sp.sha256_file(p)}
+            ok, reasons = ckpt.validate_checkpoint(m)
+            self.assertTrue(ok, reasons)
+            p.write_text("TAMPERED\n")
+            ok, reasons = ckpt.validate_checkpoint(m)
+            self.assertFalse(ok)
+            self.assertTrue(any("sha256 mismatch" in r for r in reasons))
+
+    def test_config_hash_mismatch_forces_rerun_U(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            dp = paths.job_dir(sp.JOB_PDL1)
+            make_relaxed(dp)
+            m = self._completed(dp, hashes={"a": "hA", "t": "hT"})
+            ok, _ = ckpt.validate_checkpoint(
+                m, expected_hashes={"advanced_config_sha256": "DIFFERENT",
+                                    "target_config_sha256": "hT"})
+            self.assertFalse(ok)
+
+    def test_environment_gate_zero_mpnn_still_passes_V(self):
+        with tempfile.TemporaryDirectory() as td:
+            dp = Path(td) / sp.JOB_PDL1
+            make_relaxed(dp)
+            m = self._completed(dp, rc=0, accepted=0)
+            self.assertTrue(orchestrate.pdl1_allows_egfr(m, str(dp)))
+
+    def test_environment_gate_failures_block_W(self):
+        with tempfile.TemporaryDirectory() as td:
+            dp = Path(td) / sp.JOB_PDL1
+            make_relaxed(dp)
+            bad = self._completed(dp, rc=1)
+            self.assertFalse(orchestrate.pdl1_allows_egfr(bad, str(dp)))
+            empty = Path(td) / "emptyjob"; (empty).mkdir()
+            self.assertFalse(
+                orchestrate.pdl1_allows_egfr(self._completed(empty, rc=0),
+                                             str(empty)))
+
+    def test_completed_manifest_never_silently_overwritten_Z(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            dp = paths.job_dir(sp.JOB_PDL1)
+            done = self._completed(dp)
+            ckpt.save_manifest(paths, sp.JOB_PDL1, done)
+            with self.assertRaises(PermissionError):
+                ckpt.save_manifest(paths, sp.JOB_PDL1,
+                                   self._completed(dp, rc=9) if False else
+                                   {**done, "status": "RUNNING"})
+            # force keeps the state machine honest for a new recorded attempt
+            rerun = {**done, "status": "FAILED", "returncode": 1}
+            ckpt.save_manifest(paths, sp.JOB_PDL1, rerun, force=True)
+            self.assertEqual(
+                ckpt.load_manifest(paths, sp.JOB_PDL1)["status"], "FAILED")
+
+    def test_legacy_adoption_is_evidence_bounded(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            dp = paths.job_dir(sp.JOB_PDL1)
+            self.assertIsNone(
+                ckpt.adopt_legacy_checkpoint(
+                    paths, sp.JOB_PDL1, design_path=str(dp),
+                    bindcraft_commit="pin"))
+            p = make_relaxed(dp)
+            m = ckpt.adopt_legacy_checkpoint(
+                paths, sp.JOB_PDL1, design_path=str(dp),
+                bindcraft_commit="pin")
+            self.assertTrue(m["legacy"])
+            self.assertEqual(m["status"], "COMPLETED")
+            self.assertFalse(m["provenance"]["config_hash_verified"])
+            self.assertEqual(m["relaxed_pdb_sha256"][str(p)],
+                             sp.sha256_file(p))
+            self.assertIn("LEGACY_CHECKPOINT", m["notes"])
+
+
+class TestRunJobSafety(unittest.TestCase):
+    def test_non_persistent_design_path_refused_X(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            outside = Path(td) / "ephemeral_out" / "pdl1"
+            settings = Path(td) / "s.json"
+            settings.write_text(json.dumps({
+                "design_path": str(outside) + "/",
+                "lengths": [65, 65]}))
+            with self.assertRaises(PermissionError):
+                runner.run_job(tag=sp.JOB_PDL1, settings_path=settings,
+                               advanced_path=settings, paths=paths,
+                               bindcraft_dir=Path(td) / "bindcraft",
+                               bindpy=sys.executable, dry_run=True)
+
+    def test_dry_run_writes_planned_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd = make_fake_bindcraft(td)
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            man = configure.write_all(paths, bindcraft_dir=str(bd))
+            sp_path = bd / "settings_target" / man[sp.JOB_PDL1]["target_config_name"]
+            ap_path = bd / man[sp.JOB_PDL1]["advanced_config_name"]
+            out, action = runner.run_job(
+                tag=sp.JOB_PDL1, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd), bindpy=sys.executable,
+                dry_run=True)
+            self.assertEqual(action, "DRY_RUN")
+            self.assertEqual(out["status"], "PLANNED")
+            self.assertEqual(ckpt.load_manifest(paths, sp.JOB_PDL1)["run_id"],
+                             sp.JOB_PDL1)
+
+
+class TestOrchestratorGating(unittest.TestCase):
+    def _orch(self, td, **kw):
+        return orchestrate.Orchestrator(
+            repo_dir=str(Path(td) / "repo"),
+            bindcraft_dir=str(Path(td) / "bindcraft"),
+            bindpy=str(Path(td) / "env" / "bin" / "python"),
+            root=str(Path(td) / "drive"), **kw)
+
+    def test_gpu_absent_is_controlled_blocked_Y(self):
+        with tempfile.TemporaryDirectory() as td:
+            orig = orchestrate.query_gpu
+            orchestrate.query_gpu = lambda: None
+            try:
+                o = self._orch(td)
+                rc = o.run()
+            finally:
+                orchestrate.query_gpu = orig
+            self.assertEqual(rc, 2)
+            self.assertEqual(o.state["status"], "GPU_UNAVAILABLE")
+            self.assertTrue(o.state["compute_blocked"])
+            # stopped BEFORE env build: missing bindpy never raised
+            self.assertTrue(o.paths.state_file.exists())
+
+    def test_missing_env_blocks_before_weights(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "repo").mkdir()
+            o = self._orch(td)
+            orig_gpu, orig_git = orchestrate.query_gpu, orchestrate.git_commit
+            orchestrate.query_gpu = lambda: {"name": "T4",
+                                             "vram_total_mib": 15000,
+                                             "vram_free_mib": 15000}
+            orchestrate.git_commit = lambda d: "project-sha"
+            try:
+                with self.assertRaises(RuntimeError):
+                    o.run()
+            finally:
+                orchestrate.query_gpu, orchestrate.git_commit = orig_gpu, orig_git
+            self.assertEqual(o.state["status"], "ENV_NEEDS_BUILD")
+
+    def test_settings_persist_ok(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+            good = Path(td) / "g.json"
+            good.write_text(json.dumps(
+                {"design_path": str(paths.job_dir(sp.JOB_EGFR)) + "/"}))
+            self.assertTrue(orchestrate.settings_persist_ok(paths, good))
+            bad = Path(td) / "b.json"
+            bad.write_text(json.dumps({"design_path": "/content/ephemeral/"}))
+            self.assertFalse(orchestrate.settings_persist_ok(paths, bad))
+
+
+class TestResumeAfterReset(unittest.TestCase):
+    """S/T/U across a simulated Colab reset: ephemeral /content wiped,
+    Drive persists; determinism + checkpoint must make the rerun a skip."""
+
+    def _setup_legacy_pdl1(self, td):
+        bd = make_fake_bindcraft(td)
+        paths = sp.Paths(root=Path(td) / "drive"); paths.ensure()
+        manifest_cfg = configure.write_all(paths, bindcraft_dir=str(bd))
+        make_relaxed(manifest_cfg[sp.JOB_PDL1]["design_path"])
+        return bd, paths, manifest_cfg
+
+    def test_legacy_then_reuse_after_simulated_reset(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, cfg = self._setup_legacy_pdl1(td)
+            bindpy = Path(td) / "env" / "bin" / "python"
+            bindpy.parent.mkdir(parents=True); bindpy.write_text("#!")
+            o1 = orchestrate.Orchestrator(
+                repo_dir=td, bindcraft_dir=str(bd), bindpy=str(bindpy),
+                root=str(paths.root), dry_run=True)
+            o1.state["project_commit"] = "proj-1"
+            o1.bindcraft_commit = "bin-1"
+            o1.step_configure()
+            o1.step_pdl1()
+            self.assertEqual(o1.jobs[sp.JOB_PDL1]["action"], "LEGACY_ADOPTED")
+
+            # ---- Colab runtime reset: /content erased, Drive untouched ----
+            bd2 = make_fake_bindcraft(Path(td) / "fresh_content_bindcraft")
+            o2 = orchestrate.Orchestrator(
+                repo_dir=td, bindcraft_dir=str(bd2), bindpy=str(bindpy),
+                root=str(paths.root), dry_run=True)
+            cfg2 = configure.write_all(paths, bindcraft_dir=str(bd2))
+            o2.bindcraft_commit = "bin-1"
+            o2.config_manifest = cfg2
+            o2.jobs = {}
+            o2.step_pdl1()
+            self.assertEqual(o2.jobs[sp.JOB_PDL1]["action"],
+                             "CHECKPOINT_REUSED")
+
+    def test_hash_mismatch_after_reset_does_not_skip_U(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, cfg = self._setup_legacy_pdl1(td)
+            bindpy = Path(td) / "env2" / "bin" / "python"
+            bindpy.parent.mkdir(parents=True); bindpy.write_text("#!")
+            o1 = orchestrate.Orchestrator(
+                repo_dir=td, bindcraft_dir=str(bd), bindpy=str(bindpy),
+                root=str(paths.root), dry_run=True)
+            o1.bindcraft_commit = "bin-1"
+            o1.step_configure()
+            o1.step_pdl1()
+            # tamper the recorded advanced hash (simulating changed protocol)
+            mpath = paths.manifest_path(sp.JOB_PDL1)
+            m = paths.read_json(mpath)
+            m["advanced_config_sha256"] = "stale-hash"
+            paths.write_json(mpath, m)
+            _, action = runner.run_job(
+                tag=sp.JOB_PDL1,
+                settings_path=bd / "settings_target"
+                / cfg[sp.JOB_PDL1]["target_config_name"],
+                advanced_path=bd / cfg[sp.JOB_PDL1]["advanced_config_name"],
+                paths=paths, bindcraft_dir=str(bd), bindpy=str(bindpy),
+                bindcraft_commit="bin-1", dry_run=True)
+            self.assertEqual(action, "DRY_RUN")   # rerun, NOT skipped
+
+    def test_pdl1_failure_blocks_egfr_orchestration_W(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, cfg = self._setup_legacy_pdl1(td)
+            o = orchestrate.Orchestrator(
+                repo_dir=td, bindcraft_dir=str(bd), bindpy=sys.executable,
+                root=str(paths.root), dry_run=True)
+            o.config_manifest = cfg
+            o.jobs = {sp.JOB_PDL1: {"status": "FAILED", "returncode": 1}}
+            self.assertFalse(o.step_pdl1_gate())
+            self.assertEqual(o.state["pdl1_environment_gate"], "FAIL")
+
+    def test_report_flags_and_persistence(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, cfg = self._setup_legacy_pdl1(td)
+            o = orchestrate.Orchestrator(
+                repo_dir=td, bindcraft_dir=str(bd), bindpy=sys.executable,
+                root=str(paths.root), dry_run=True)
+            o.config_manifest = cfg
+            o.state = {"project_commit": "p", "bindcraft_commit": "b",
+                       "gpu": {"name": "T4", "vram_total_mib": 15000},
+                       "weights": {"action": "CACHE_HIT"}}
+            m = ckpt.adopt_legacy_checkpoint(
+                paths, sp.JOB_PDL1,
+                design_path=cfg[sp.JOB_PDL1]["design_path"],
+                bindcraft_commit="b")
+            o.jobs = {sp.JOB_PDL1: m}
+            o.geometry = {sp.JOB_PDL1: {}}
+            rep = o.step_report()
+            self.assertTrue(rep["flags"]["ENVIRONMENT_PASS"])
+            self.assertFalse(rep["flags"]["EXPERIMENTALLY_VALIDATED"])
+            self.assertIn(None, [rep["flags"]["COMPUTATIONAL_FILTER_PASS"]])
+            out = paths.reports_dir / "stage2_smoke_report.json"
+            self.assertTrue(json.loads(out.read_text())["flags"] is not None)
+            self.assertIn("experimentally_validated",
+                          (paths.reports_dir / "stage2_smoke_report.md")
+                          .read_text())
+
+
+class TestReliabilityStaticGuards(unittest.TestCase):
+    STAGE_MODULES = [
+        "stage2_paths.py", "stage2_preflight.py", "stage2_configure.py",
+        "stage2_checkpoint.py", "stage2_run_job.py", "stage2_analyze.py",
+        "stage2_orchestrate.py", "bindcraft_preflight.py",
+    ]
+
+    def test_forbidden_patterns_absent(self):
+        for name in self.STAGE_MODULES:
+            src = (SCRIPTS / name).read_text()
+            self.assertNotIn("devices()[", src, name)       # BUG 002
+            self.assertNotIn("== 14", src, name)            # BUG 006
+            self.assertNotIn("time.sleep(1800)", src, name)  # BUG 004
+            self.assertNotIn("RUNROOT", src, name)          # BUG 009/R
+
+    def test_no_cpu_fallback_language(self):
+        src = (SCRIPTS / "stage2_orchestrate.py").read_text()
+        self.assertIn("GPU_UNAVAILABLE", src)
+        self.assertNotIn("cpu fallback", src.lower())
 
 
 if __name__ == "__main__":
