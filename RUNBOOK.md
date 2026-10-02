@@ -66,51 +66,102 @@ curl -fSL "https://files.rcsb.org/download/6ARU.cif" -o data/raw/6ARU.cif
 
 安装/构建最多两次有依据的尝试；仍失败即记录现象、已试方案、替代路径并停下，不随机改依赖。任何命令输出若意外包含 token，立即作废该日志并轮换凭据。
 
-## 7. 阶段 2 BindCraft smoke（2026-10-01 起）
+## 7. 阶段 2 BindCraft smoke（2026-10-02 可靠性合并版）
 
-背景：云端尝试 001 在**环境层**失败——Colab 滚动镜像 Py 3.13.15 / JAX 0.11.1 已移除
-`jax.lib.xla_bridge`（JAX 0.8.0 起移除），ColabDesign `clear_mem()` 崩在官方 PDL1 示例。
-完整根因/证据见 [reports/stage2_environment_failure_001.md](reports/stage2_environment_failure_001.md)。
-notebook 现自建隔离 Python 3.10 + JAX 0.6.0(CUDA 12.6) 环境，等价官方 install_bindcraft.sh。
+背景：云端尝试 001–004 的环境/harness 问题与修复历史见
+[reports/stage2_environment_failure_001.md](reports/stage2_environment_failure_001.md)；
+2026-10-02 按用户合并指令把流程重构为**可复现、可重启安全、持久化、幂等**的形态，
+缺陷台账 BUG 001–015 见
+[reports/stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)。
+科学配置冻结不变（PDL1 hotspot 56/65 aa/cap 1；EGFR B 包络 6 hotspot/80 aa/cap 3；
+官方 default filters + 4stage multimer，仅 `max_trajectories` 不同）。
 
-尝试 002（同日）：隔离 env 本身健康（jax 0.6.0 / GPU / clear_mem / xla_bridge 全过），但
-preflight 脚本把 `jax.Array.devices()` 返回的 set 当列表索引（`devices()[0]`）而崩——
-**测试脚本 harness bug，非环境问题**。已修复（设备集合迭代 + matmul 四项验证 + SKIP 语义），
-环境与 notebook 均未变；runtime 存活时只需重传 `bindcraft_preflight.py` 重跑 Cell 5/6。
+### 7.1 架构一句话
 
-尝试 003（同日）：Cell 7 用 `subprocess.Popen("aria2c … && tar … && touch done.txt")` 发射后
-不管 + 盲轮询 30 分钟；子进程实际立即退出（params≈4 KB、done.txt=false），rc/stderr 全被
-丢弃——**下载 harness bug**。已修复（attempt-004）：Cell 7 改为**内联可观测 wget harness**
-（不再依赖外部脚本）——已存在完整 15 文件集则跳过；保证 wget、`wget -c` 续传、观测子进程
-（PID/按大小进度/returncode/download.log）、非零即停打印日志尾部、解包前 `tar -tf` 校验、
-**恰好 15 个**官方 .npz（5 base + 5 pTM + 5 Multimer-v3）才写 done.txt；校验后删归档。
-Cell 5 上传文件回退为 3 个。环境与科学配置不变。
+notebook [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)
+只是 A–H 八个薄 cell；所有可执行逻辑在 pin 的 `scripts/stage2_*.py` +
+`ensure_af2_weights.py` 中。昂贵产物全部落 Drive
+`MyDrive/BindCraft/stage2_smoke/`（`persistent/{checkpoints,configs,logs,metadata,reports,cache}`
+与两个 job 目录）；`/content` 下一切都可重建。
+
+### 7.2 首次运行（用户 A7）
+
+1. 准备 Colab Secret：左栏钥匙图标 → Secrets → 添加 `GITHUB_TOKEN`（对私有仓库
+   `SyzenShen/egfr-binder-challenge` 有读权限的 PAT；notebook 只通过 git header
+   使用，绝不打印）。无 token 时 Cell C 支持手工上传仓库快照 tarball 作为 fallback。
+2. Runtime → Change runtime type → **T4 GPU**；上传新版 notebook。
+3. 自上而下运行 **Cell A→H，数字一律不改**：
+   - **A** GPU 门：无 GPU / 配额拒绝立即打印 `GPU_UNAVAILABLE` /
+     `COMPUTE_QUOTA_BLOCKED` 并以退出码 2 停止，**绝不回退 CPU**；
+   - **B** 挂载 Drive 并设定 `STAGE2_PERSISTENT_ROOT`；
+   - **C** clone/fetch 项目**精确 pin commit** `bc81198`，校验 SHA，记录
+     crop PDB 与脚本 SHA256；
+   - **D** BindCraft pin `7713aa0` + 隔离 Miniforge py3.10/jax 0.6.0 环境
+     （幂等，首次 10–25 分钟）+ 冻结 crop PDB 就位与身份校验；
+   - **E** 隔离 env 内 preflight 硬门（版本/clear_mem/xla_bridge/真 GPU
+     matmul，逐元素 ≈2048）；
+   - **F** AF2 权重：本地精确 15 npz → Drive 缓存恢复 → Drive 归档解包 →
+     可观测 `wget -c` 续传下载（pid/rc/字节/耗时/日志/SHA256 全记录；
+     `done.txt` 永不权威；14/16/空文件均拒绝）；
+   - **G** **唯一昂贵 cell，"RUN OR RESUME STAGE 2 SMOKE"**：一个 orchestrator
+     子命令；PDL1 合法检查点自动 skip（约 30 分钟不重跑）；PDL1 环境门
+     （rc==0 且 ≥1 relaxed PDB；零 MPNN 接受不算环境失败）不过则阻断 EGFR；
+   - **H** 读持久 JSON/MD 报告并 py3Dmol 目检。
+4. 完成后回传 `persistent/reports/`、`persistent/metadata/`、`persistent/logs/`
+   与 relaxed PDB（或分享整个 Drive 文件夹）。
+
+### 7.3 Stage 2 运行时重置（reset）后如何恢复
+
+Colab 释放/reset runtime 会抹掉 `/content`（env、bindcraft、权重、PDB、settings
+全没了；notebook 历史输出仍可见**不代表当前状态**）。恢复步骤：
+
+1. 重新连接 **GPU** runtime（不是 CPU）。
+2. 打开 pin 的同一个 notebook，**从 A 顺序跑到 G**。
+3. A–D 自动重建临时件（环境若 Miniforge 层也被抹则重建，约 10–25 分钟；
+   Drive 文件不受影响）。
+4. F 从 Drive 缓存恢复 15 个权重文件，通常**零下载**。
+5. G 读 `persistent/checkpoints/<job>/run_manifest.json`：PDL1 合法 COMPLETED
+   检查点（配置哈希 + BindCraft commit + relaxed PDB SHA 匹配）直接
+   `CHECKPOINT_REUSED`/`SKIPPING EXPENSIVE PDL1 RERUN`；合并前已成功但无
+   manifest 的 PDL1 run（Drive 上有真实 relaxed PDB）被诚实采纳为
+   `LEGACY_CHECKPOINT`（不可重建的来源明确标注未验证，不编造）。
+6. 看到 `STAGE 2 SMOKE COMPLETE` 或 quota 提示即止；把报告发回。
+
+### 7.4 GPU 配额被拒时
+
+现象："Cannot connect to GPU backend due to usage limits." 或 nvidia-smi 缺失。
+语义：`GPU_UNAVAILABLE` / `COMPUTE_QUOTA_BLOCKED`（Cell A 退出码 2；orchestrator
+同样 rc=2）。这是算力分配状态，**不是** BindCraft 失败；不建环境、不下载权重、
+不跑 CPU。等待配额恢复后只需重跑 A→G，完成的工作不会重做。
+
+### 7.5 未来在自有 Linux GPU 服务器上运行（无 Colab/Drive 时）
+
+orchestrator 不依赖 Colab：把持久根指到本机持久盘，直接运行
+
+```bash
+export STAGE2_PERSISTENT_ROOT=/data/bindcraft/stage2_smoke
+/opt/bindcraft_env/bin/python scripts/stage2_orchestrate.py \
+  --repo-dir /path/to/egfr-binder-challenge \
+  --bindcraft-dir /opt/bindcraft \
+  --bindpy /opt/bindcraft_env/bin/python
+```
+
+环境按 D 格同一 conda spec 手工建；权重走同一缓存/下载模块；GPU 门同样是
+nvidia-smi 第一关，rc=2 即阻断。不需要 Cell B（drive.mount）与 C（Colab secret）。
+
+### 7.6 判读与纪律
+
+completed ≠ accepted；`final_design_count` 只数 BindCraft `Accepted/` 目录，
+零接受要与环境失败分开记录；pLDDT/ipTM/PAE 不是亲和力。OOM 两次（factory reset
+后最多再试 1 次）即停并交回 preflight/metadata/log，由我写 compute_escalation.md。
+smoke 复核前不跑 broad、不加轨迹、不改表位、不付费。
 
 本机制备（本机可复现）：
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 69/69 期望
+python3 -m unittest discover -s tests             # 109/109 期望
 ```
-
-云端执行（用户 A7，首次建环境约 10–25 分钟，之后总时长按实测，免费 T4）：
-
-0. **runtime 仍存活（attempt-004 之后）**：不用 reset、不用重装 Python/JAX 环境——
-   把当前 notebook 的 **Cell 7 整格替换**为仓库新版 notebook 的 Cell 7 并运行
-   （旧格是不可观测的 Popen 下载，必须换掉）；打印 `OK: 15 required AlphaFold .npz files
-   validated` 后从 Cell 8 继续。仅当 runtime 已释放才走下面完整流程。
-1. **先 Disconnect and delete runtime**（清掉尝试 001 的 JAX 0.11.1 残留）→ Runtime → Change runtime type → **T4 GPU** → Upload 新版 `cloud/stage2_bindcraft_smoke.ipynb`。
-2. 顺序执行 Cell 1–13，**不要改任何数字**：
-   - Cell 2 在 `/content/bindcraft_env` 自建 Miniforge **Python 3.10** 环境：conda-forge/nvidia `jax=0.6.0 jaxlib=0.6.0=*cuda*`（`CONDA_OVERRIDE_CUDA=12.6`）、`numpy<2`、`flax<0.10`、ColabDesign pin e31a56f `--no-deps`、PyRosetta cp310 wheel；Colab 系统 Python 3.13/JAX 0.11 不参与任何计算；
-   - Cell 5 上传**三个**文件：`data/processed/6ARU_chainA_domain3_310-481.pdb`、`scripts/analyze_bindcraft_run.py`、`scripts/bindcraft_preflight.py`；
-   - **Cell 6 pre-flight 硬门**（先于 5.3 GB 权重下载）：必须打印 `PRE-FLIGHT PASSED on Tesla T4 | jax 0.6.0 | cuda backend 12.6...`；失败即停，回传 `preflight.json`，不要继续；
-   - **Cell 7 可观测下载**：内联 wget harness（已存在 15 个 .npz 则跳过；否则 `wget -c` 续传、观测 PID/进度/rc、非零即停打印日志尾部、`tar -tf` 校验、恰好 15 个 .npz 才写 done.txt）；
-   - Cell 9 跑**官方最小示例 PDL1（65 aa / hotspot 56 / cap 1）**——失败=环境故障，**停**，不要碰 EGFR；Cell 10 断言 relaxed PDB 存在才放行；
-   - Cell 11 才跑 EGFR micro（B 保守 hotspot 6 残基 / 80 aa / cap 3）。
-3. OOM 纪律：Factory reset 后**最多再试 1 次**（累计 2 次）即停；把 preflight.json、env_metadata 与 log 交回，我写 `reports/compute_escalation.md`——该文件在观察到 OOM 前不存在。
-4. 产物落在 Drive `BindCraft/stage2_smoke/`：`preflight.json`、`env_metadata.json`（含 `pip_freeze.txt`/`conda_list.txt`）、`stage2_smoke_report.json`、`*_vram.csv`、两个 `.log`、`Trajectory/` PDB；下载问题另看 runtime 侧 `/content/bindcraft/params/download.log`。
-5. 判读纪律：completed ≠ success；binder 是否接触 B、是否迁移、是否抱裁剪边缘、有无严重 clash 以 analyzer JSON + Cell 13 三维目检为准；接受/拒绝看官方 filters 的 `Accepted/` 与 CSV。
-6. smoke 复核前：不跑 broad（12 残基）配置、不加轨迹数、不改表位、不回退 Colab runtime 版本、不 monkey-patch 上游、不付费；依赖升级先记录实际版本再决定。
 
 本地分析回传产物（无 GPU 也能跑，纯标准库）：
 

@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-02 ｜ 阶段：**2 云端 smoke test — 可靠性合并进行中：Checkpoint A（持久路径/preflight GPU 门/确定性配置/manifest 检查点/可观测 run_job/分析包装/单一 orchestrator）与 Checkpoint B（AF2 Drive 缓存+可观测 `wget -c` 续传+精确 15 文件校验，done.txt 不权威）均已完成；BUG 001-015 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；回归 105/105 双套件通过；Checkpoint C（薄 notebook+恢复 UX+文档）待做；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 重跑（待新薄 notebook 就绪后改为"跑一个恢复 cell"）、A6 Slack 截图、A3 资格确认
+最后更新：2026-10-02 ｜ 阶段：**2 云端 smoke test — 可靠性合并 Checkpoint A/B/C 全部完成并 push 核实（A=`f8b9f0d`，B=`bc81198`；C 见 git log/ls-remote）；薄 A–H notebook + 单一恢复 cell G，工件按 pin commit `bc81198` 获取；BUG 001-015 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；回归 109/109 双套件通过；等待用户 A7 在 Colab 跑/恢复一次真实 smoke；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 跑薄 notebook（reset 后从 A 跑到 G 即恢复）、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -9,7 +9,7 @@
 | 0 规则/环境/仓库/最小项目 | ✅ 完成（push 已核实） | 远端 main @ 24d362c |
 | 1 目标/映射/表位候选 | ✅ 完成（测试 22/22） | 科学确认点 A 已被 A+ 取代 |
 | 1.5 目标+assay 感知表位审计 | ✅ 完成（测试 36/36） | A+ 已由用户 2026-10-01 批准（D-013） |
-| 2 云端 smoke test | 🟡 尝试 001 环境失败、已修复待复测 | 实测 T4 15GB；PDL1 因 JAX 0.11.1 崩溃；新隔离 py3.10/jax0.6.0 环境 + preflight 门就绪 |
+| 2 云端 smoke test | 🟡 可靠性合并完成（A/B/C push 核实），待 A7 云端复测 | 实测 T4 15GB；PDL1 成功 run 已持久化（零最终接受）；薄 A–H notebook + 检查点幂等恢复就绪；109/109 测试 |
 | 3 小批次生成与筛选 | ⏳ 未开始 | 依赖 smoke 报告经用户复核 |
 | 4 双物种复核 / 完整 ECD | ⏳ 未开始 | 另依赖 A2 |
 | 5 pH 假设与有限重设计 | ⏳ 未开始 | |
@@ -62,18 +62,19 @@
 - Slack 凭据：[reports/slack_provenance/INDEX.md](reports/slack_provenance/INDEX.md)，7 条主张全部 PENDING（用户尚未提供截图）。
 - 测试 69/69（[test_stage2.py](tests/test_stage2.py)，含 JAX 版本策略、preflight 设备语义、内联下载 harness 回归）。
 
-### 可靠性合并（2026-10-02，Checkpoint A 已完成）
+### 可靠性合并（2026-10-02，Checkpoint A/B/C 已完成）
 
 - 触发：用户 23 节合并指令——把 Colab smoke 流程重构为可复现、可重启安全、持久化、幂等；科学冻结，不做 EGFR 生产采样。
-- **Checkpoint A（已提交待 push 核实）**：新增 `scripts/stage2_paths.py`（唯一路径来源，`STAGE2_PERSISTENT_ROOT` 可覆盖，原子 JSON）、`stage2_preflight.py`（GPU 优先门；matmul 改为 A@A 后逐元素 ≈2048，`devices()` 只迭代；`bindcraft_preflight.py` 降为兼容垫片）、`stage2_configure.py`（确定性两份 target + max1/max3，差异断言仅 `max_trajectories`）、`stage2_checkpoint.py`（manifest 生命周期/检查点校验/LEGACY_CHECKPOINT 证据受限采纳/COMPLETED 不可静默覆盖）、`stage2_run_job.py`（先 manifest 后运行、design_path 持久断言、日志+VRAM 落 Drive、OOM 分类）、`stage2_analyze.py`（复用既有几何引擎，不复制逻辑）、`stage2_orchestrate.py`（GPU_UNAVAILABLE 受控阻断 rc=2，绝不 CPU；PDL1 门=rc0+relaxed PDB；持久 JSON+MD 报告）。
-- 报告：[stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)（BUG 001–015 台账，FIXED/证据/待 B/C 标注）。
-- 回归测试扩至 **93/93**（系统 unittest discover 与 .venv pytest 双跑）：覆盖 Q（路径来自 config）、R（无 RUNROOT 依赖）、S（模拟 runtime reset 后检查点复用）、T（完成即跳过）、U（配置哈希不匹配强制重跑）、V（零 MPNN 接受仍过门）、W（PDL1 失败阻断 EGFR）、X（非持久 design_path 拒跑）、Y（无 GPU=GPU_UNAVAILABLE，rc 2，建环境前停）、Z（不静默覆盖 COMPLETED）及静态模式守卫。
-- 待做：Checkpoint C（薄 A–H notebook、按 pin commit 取项目工件、README/STATE/RUNBOOK/HUMAN_ACTIONS/DECISIONS 文档与 reset 恢复指引）。
-- **Checkpoint B（已提交待 push 核实）**：新增 `scripts/ensure_af2_weights.py`——本地精确 15 npz → Drive 解包文件缓存恢复 → Drive 归档解包 → 可观测 `wget -c` 下载（`.part` 续传、pid/rc/耗时/字节/日志/归档 SHA256 全记录，SHA256 仅作观察摘要不宣称验真）；`done.txt` 永不权威；14/16/空文件/陈旧 done 一律拒绝；wget 不可用时 apt 保证安装，绝不假设 aria2c。preflight matmul 已在 A 改为逐元素 ≈2048。回归 **105/105**（K/L/M/N/O/P + 下载成功/失败/归档/ dry-run/orchestrator 接入）。
+- **Checkpoint A（已 push + ls-remote 核实 `f8b9f0d1b75926b5e83a7c924558fab7980ace85`）**：新增 `scripts/stage2_paths.py`（唯一路径来源，`STAGE2_PERSISTENT_ROOT` 可覆盖，原子 JSON）、`stage2_preflight.py`（GPU 优先门；matmul 改为 A@A 后逐元素 ≈2048，`devices()` 只迭代；`bindcraft_preflight.py` 降为兼容垫片）、`stage2_configure.py`（确定性两份 target + max1/max3，差异断言仅 `max_trajectories`）、`stage2_checkpoint.py`（manifest 生命周期/检查点校验/LEGACY_CHECKPOINT 证据受限采纳/COMPLETED 不可静默覆盖）、`stage2_run_job.py`（先 manifest 后运行、design_path 持久断言、日志+VRAM 落 Drive、OOM 分类）、`stage2_analyze.py`（复用既有几何引擎，不复制逻辑）、`stage2_orchestrate.py`（GPU_UNAVAILABLE 受控阻断 rc=2，绝不 CPU；PDL1 门=rc0+relaxed PDB；持久 JSON+MD 报告）。
+- 报告：[stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)（BUG 001–015 台账，FIXED/证据标注）。
+- 回归测试在 A 后扩至 93/93：覆盖 Q（路径来自 config）、R（无 RUNROOT 依赖）、S（模拟 runtime reset 后检查点复用）、T（完成即跳过）、U（配置哈希不匹配强制重跑）、V（零 MPNN 接受仍过门）、W（PDL1 失败阻断 EGFR）、X（非持久 design_path 拒跑）、Y（无 GPU=GPU_UNAVAILABLE，rc 2，建环境前停）、Z（不静默覆盖 COMPLETED）及静态模式守卫。
+- **Checkpoint B（已 push + ls-remote 核实 `bc8119886cc3aaf6f57d9b1f8c548cfcff8dffc9`）**：新增 `scripts/ensure_af2_weights.py`——本地精确 15 npz → Drive 解包文件缓存恢复 → Drive 归档解包 → 可观测 `wget -c` 下载（`.part` 续传、pid/rc/耗时/字节/日志/归档 SHA256 全记录，SHA256 仅作观察摘要不宣称验真）；`done.txt` 永不权威；14/16/空文件/陈旧 done 一律拒绝；wget 不可用时 apt 保证安装，绝不假设 aria2c。preflight matmul 逐元素 ≈2048。回归 **105/105**（K/L/M/N/O/P + 下载成功/失败/归档/dry-run/orchestrator 接入）。
+- **Checkpoint C（2026-10-02 完成；commit/push/ls-remote 见 git log）**：[cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 重建为 2 markdown + 8 个薄代码 cell（A GPU 门 rc2 绝不 CPU；B Drive 挂载；C 经 Colab Secret `GITHUB_TOKEN` 按**精确 pin commit `bc81198`** clone/fetch 私有仓库并校验 SHA/SHA256，token 不打印，手工 tarball 仅 fallback；D BindCraft `7713aa0` + py3.10/jax0.6.0 隔离环境幂等构建 + crop PDB 身份校验；E preflight；F 权重精确 15 npz/缓存/续传；G 唯一昂贵 cell 运行单一 orchestrator（PDL1 完成即 skip、失败阻断 EGFR）；H 持久报告 + py3Dmol）。文档：README 当前阶段/目录、RUNBOOK §7（新 A–H 流程 + §7.3 reset 恢复 + §7.4 配额 + §7.5 自有 Linux GPU 服务器变体）、HUMAN_ACTIONS A7（先配 GITHUB_TOKEN、再从 A 跑到 G）、DECISIONS D-018。回归 **109/109**（新增 TestThinNotebook 16 个静态守卫：锚点区分 Cell C 工件名与真正调用点、禁止 devices()[/14 计数/RUNROOT/aria2c 16 线程/盲 sleep）。
+- 冻结科学零改动：不做 EGFR 生产采样、不跑 broad、不加轨迹、不改表位、不付费；`experimentally_validated` 恒 false；paid_budget=0。
 
 ## 当前 Blockers（真实阻挡）
 
-1. **CLOUD_SMOKE_ATTEMPT_003_HARNESS_FIXED / AWAITING_WEIGHTS_RERUN** — 尝试 001 环境失败（JAX 0.11.1）→ 已由隔离 py3.10/jax 0.6.0 修复；尝试 002 preflight 脚本 set 索引 bug → 已修复；尝试 003 权重下载 harness bug（unobserved Popen + 盲轮询）→ attempt-004 已修复为内联可观测 wget harness（15-npz 校验、续传、非零即停）。**Python/JAX 环境无需重建**：当前 runtime 复用，用仓库新版 notebook 的 Cell 7 整格替换旧格后运行即可；PDL1 relaxed 轨迹未取得前阶段 3 不得开始。
+1. **AWAITING_CLOUD_SMOKE_RERUN (A7)** — 可靠性合并 A/B/C 已完成（BUG 001–015 全部 FIXED 或 EVIDENCE；109/109 测试）。等用户在 Colab：配 `GITHUB_TOKEN` secret → T4 GPU → 上传薄 notebook → 从 Cell A 顺序跑到 G；已持久化的 PDL1 run 会被采纳为 LEGACY_CHECKPOINT（或校验通过直接 SKIP），权重走 Drive 缓存。reset/配额中断后从 A 跑到 G 即可恢复。PDL1 环境门（rc0 + relaxed PDB）未重新证实前阶段 3 不得开始。
 2. **MOUSE_CONSTRUCT_PROOF_PENDING** — mouse 25–647 仅 Slack 转述（A2/A6）；不阻塞 human smoke，阻塞阶段 4 mouse 验证。
 3. **SLACK_PROVENANCE_PENDING (A6)** — 7 条 Slack 主张无截图（含上条）；[INDEX](reports/slack_provenance/INDEX.md) 全 PENDING。
 4. **ELIGIBILITY/REGISTRATION_PENDING** — Track 3 资格/注册用户尚未确认（A3）；不阻塞技术 smoke，阻塞提交。
@@ -81,12 +82,12 @@
 
 ## 依赖
 
-- 阶段 2：A+ 已批准；需本人在 Colab 用更新后 notebook 复测（factory reset → T4 → 三文件上传 → preflight 通过）；付费必须先批准。
+- 阶段 2：A+ 已批准；需本人在 Colab 用新版薄 notebook 跑/恢复（配 GITHUB_TOKEN secret → T4 → Cell A→H）；付费必须先批准。
 - 阶段 4：另依赖 A2/A6 mouse 官方构建体凭据。
 
 ## 下一动作（按优先级）
 
-1. **A7（用户，重跑权重下载）**：当前 Colab runtime（含 `/content/bindcraft_env`）**可直接复用，Python/JAX 环境无需重装**：把当前 notebook 的 Cell 7 整格替换为仓库新版 [stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 中的 Cell 7（内联可观测 wget harness，校验 15 个官方 .npz），然后运行；看到 `OK: 15 required AlphaFold .npz files validated` 后从 Cell 8 继续。回传 `BindCraft/stage2_smoke/`（preflight.json、env_metadata.json、stage2_smoke_report.json、两个 log、relaxed PDB）。若 runtime 已被释放，按 RUNBOOK §7 完整重跑。
+1. **A7（用户，跑/恢复 Stage 2 smoke）**：按 [HUMAN_ACTIONS.md](HUMAN_ACTIONS.md) A7 与 [RUNBOOK.md](RUNBOOK.md) §7.2——Colab Secrets 加 `GITHUB_TOKEN`（读私有仓库的 PAT；不愿配则 Cell C 手工传 tarball）；T4 GPU runtime；上传 [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)；从 Cell A 顺序跑到 H，数字不改。G 是唯一昂贵 cell（PDL1 合法检查点/legacy PDB 自动跳过，失败即阻断 EGFR）。中断/reset/配额被拒后重连 GPU 再从 A 跑到 G 即恢复（§7.3/§7.4）。回传 Drive `BindCraft/stage2_smoke/persistent/{reports,metadata,logs}` 与 relaxed PDB。
 2. 我收到实测产物后写 Stage 2 smoke 报告：环境 vs 靶点故障判定、B 接触/迁移/边缘伪影诊断、仅按实测吞吐给批次建议；若 OOM 两次才写 compute_escalation.md。
 3. A6 Slack 截图；A3 Track 3 资格确认（一次性问题，见 HUMAN_ACTIONS）。
 4. smoke 报告经用户复核前不扩大生成、不跑 broad hotspot、不付费。

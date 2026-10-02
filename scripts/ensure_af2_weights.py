@@ -278,15 +278,23 @@ def ensure_weights(*, params_dir, cache_dir, log_dir, url=WEIGHT_URL,
 
 if __name__ == "__main__":
     import argparse
+    import sys
     ap = argparse.ArgumentParser()
     ap.add_argument("--params-dir", required=True)
     ap.add_argument("--cache-dir", required=True)
     ap.add_argument("--log-dir", required=True)
+    ap.add_argument("--out", help="also persist the JSON result here")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     result = ensure_weights(params_dir=args.params_dir,
                             cache_dir=args.cache_dir,
                             log_dir=args.log_dir, dry_run=args.dry_run)
-    print(json.dumps(result, indent=2))
-    sys_rc = 0 if result.get("ok") else 1
-    raise SystemExit(sys_rc)
+    text = json.dumps(result, indent=2)
+    print(text)
+    if args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(out.suffix + ".tmp")
+        tmp.write_text(text)
+        os.replace(tmp, out)
+    raise SystemExit(0 if result.get("ok") else 1)

@@ -1,6 +1,6 @@
 # HUMAN_ACTIONS — 需要本人完成的最短动作清单
 
-更新：2026-10-01。每条都给“为什么、怎么做、完成标志”。未完成前我不会假设其已完成。
+更新：2026-10-02（A7 已随可靠性合并改为"跑一个恢复 cell"）。每条都给“为什么、怎么做、完成标志”。未完成前我不会假设其已完成。
 
 ## A1 — GitHub 认证 ~~（解除 PUSH_BLOCKED）~~ ✅ 已由用户提供仓库解除（2026-09-30）
 
@@ -43,17 +43,36 @@
 
 本机可用空间仅 27.5GB。云端方案不受影响，但建议清理出 ≥50GB 余量（系统设置 → 储存空间；清空下载/废纸篓；`brew cleanup`）。不建议为项目购买/外接存储，模型产物本来就不落地本地。
 
-## A7 — 在 Colab 重跑 Stage 2 权重下载（阶段 2 当前唯一阻塞；runtime 存活时约 5–15 分钟）
+## A7 — 在 Colab 跑/恢复 Stage 2 smoke（阶段 2 当前唯一算力阻塞；首次约 40–60 分钟，恢复重跑通常很短）
 
-**为什么**：本机无 NVIDIA GPU，BindCraft 必须在 CUDA GPU 上跑。四次尝试的定位：①Colab 预装环境（Py3.13 + JAX 0.11.1）跑不了官方流程 → 已由隔离 py3.10/jax 0.6.0 环境修复；②preflight 脚本 set 索引 bug → 已修复；③Cell 7 权重下载用不可观测的 `Popen(aria2c…)` + 盲等 30 分钟，子进程秒退且错误被丢弃 → attempt-004 已改为内联可观测 wget harness。**四次都不是科学配置问题，环境本身已验证健康。**
+**为什么**：本机无 NVIDIA GPU，BindCraft 必须在 CUDA GPU 上跑。此前四次尝试的环境与
+harness 问题（JAX 0.11.1、set 索引、不可观测下载、14/15 文件计数）已全部修复并模块化；
+2026-10-02 可靠性合并后 notebook 只剩 A–H 八个薄 cell，昂贵工作全部 checkpoint 到 Drive，
+reset/配额中断后可安全续跑。已观测到一次 PDL1 成功 run 持久化在 Drive
+（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），合并流程会把它识别为
+LEGACY_CHECKPOINT 并跳过约 30 分钟的重跑。
 
-**最短步骤（当前 runtime 还在，Python/JAX 环境不重装）**：
-1. **整格替换 Cell 7**：把仓库新版 [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 里 **Cell 7** 的代码整段复制覆盖当前 notebook 的 Cell 7（旧格是盲等下载，必须换掉）。新格是自包含的：已存在完整 15 个官方 .npz 则跳过；否则保证 wget、`wget -c` 续传、观测子进程（PID/按大小进度/returncode/`download.log`）、非零即停打印日志尾部、解包前 `tar -tf` 校验完整性、校验**恰好 15 个**官方 .npz（5 base + 5 pTM + 5 Multimer-v3）才写 `done.txt`，校验通过后删归档。
-2. **运行 Cell 7**：会周期性打印进度；看到 `OK: 15 required AlphaFold .npz files validated` 即成功。若失败，错误会**立即**打印真实日志尾部——停止，把输出和 `/content/bindcraft/params/download.log` 发我，不要继续、不要自行改包。
-3. 从 Cell 8 继续：PDL1 官方示例 → 成功（Cell 10 过）后才自动跑 EGFR micro。
-4. OOM：Factory reset 后最多重试一次；第二次仍 OOM 就停。
-5. 完成后把 Drive 文件夹 `BindCraft/stage2_smoke/` 分享给我（或至少回传 `preflight.json`、`env_metadata.json`、`stage2_smoke_report.json`、两个 `.log`、一个 relaxed PDB）。
+**最短步骤（一次性准备，约 3 分钟）**：
+1. Colab 左栏钥匙图标 → Notebook Secrets → 新建 `GITHUB_TOKEN`（对私有仓库
+   `SyzenShen/egfr-binder-challenge` 有读权限的 PAT）。token 只经 git header 使用，
+   notebook 不会打印它；不想配 token 也可在 Cell C 提示时手工上传仓库快照 tarball。
+2. Runtime → Change runtime type → **T4 GPU** → 上传新版
+   [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)。
 
-**若 runtime 已被释放**：按 [RUNBOOK.md](RUNBOOK.md) §7 完整流程重跑（Disconnect and delete → T4 → 上传新版 notebook → 逐格执行，Cell 2 重建环境 10–25 分钟，Cell 5 传 3 个文件）。
+**运行（只需记住"从上到下，一个恢复 cell"）**：
+3. 顺序运行 **Cell A→H**，不要改任何数字。A=GPU 门（无 GPU/配额拒绝会打印
+   `GPU_UNAVAILABLE`/`COMPUTE_QUOTA_BLOCKED` 并停止，不会跑 CPU）；B=Drive；
+   C=精确 pin commit `bc81198` 取项目工件；D=BindCraft `7713aa0` + 隔离
+   py3.10/jax0.6.0 环境（首次 10–25 分钟，幂等）；E=preflight；F=权重
+   （本地→Drive 缓存→可观测续传下载，精确 15 npz）；**G=唯一昂贵 cell**，
+   PDL1 完成即跳过、失败即阻断 EGFR；H=报告+三维目检。
+4. 若中途断连/reset/配额被拒：重新连上 GPU 后**从 A 再跑到 G 即可**——权重走 Drive
+   缓存，PDL1 检查点自动 skip，不会静默重跑或覆盖完成态。详见
+   [RUNBOOK.md](RUNBOOK.md) §7.3/§7.4。
+5. OOM：factory reset 后最多重试一次；第二次仍 OOM 就停，把日志发我。
 
-**完成标志**：我拿到上述真实产物并写出 Stage 2 smoke 报告（环境 vs 靶点故障判定 + B 接触/迁移/边缘结论 + 仅按实测吞吐的批次建议）。在此之前 EGFR 生产生成、broad hotspot、付费计算一律不启动。
+**完成标志**：G 打印 `STAGE 2 SMOKE COMPLETE`，Drive
+`BindCraft/stage2_smoke/persistent/` 下有 `reports/stage2_smoke_report.{json,md}`、
+`metadata/`、`logs/`；把这些（或整个文件夹链接）发我。我据此写 Stage 2 smoke 判读
+（环境 vs 靶点故障、B 接触/迁移/边缘、仅按实测吞吐的批次建议）。在此之前 EGFR 生产
+生成、broad hotspot、付费计算一律不启动。

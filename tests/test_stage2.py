@@ -143,30 +143,131 @@ class TestTranslationReport(unittest.TestCase):
             self.assertIn(needle, txt)
 
 
-class TestSmokeNotebook(unittest.TestCase):
+class TestThinNotebook(unittest.TestCase):
+    """Consolidation Checkpoint C: the notebook is a thin A-H front end.
+    All executable science/orchestration lives in pinned scripts."""
+
     @classmethod
     def setUpClass(cls):
         cls.nb = json.loads((CLOUD / "stage2_bindcraft_smoke.ipynb").read_text())
-        cls.code_cells = [
-            "".join(c["source"]) for c in cls.nb["cells"]
-            if c["cell_type"] == "code"]
-        cls.code_text = "\n".join(cls.code_cells)
+        cls.code = ["".join(c["source"]) for c in cls.nb["cells"]
+                    if c["cell_type"] == "code"]
+        cls.text = "\n".join(cls.code)
 
-    def test_valid_and_pinned(self):
+    def indices(self, needle):
+        return [i for i, s in enumerate(self.code) if needle in s]
+
+    def test_structure_and_compile(self):
         self.assertEqual(self.nb["nbformat"], 4)
-        text = "\n".join("".join(c["source"]) for c in self.nb["cells"])
-        self.assertIn("7713aa0d0d351e4117a8befeb8541f3a8ebd3368", text)
-        # official default filters/advanced used; no hard-target settings file
-        self.assertIn("default_filters.json", text)
-        self.assertIn("default_4stage_multimer.json", text)
-        self.assertNotIn("hardtarget.json", text.lower())
-        self.assertNotIn("_hardtarget", text.lower())
-        self.assertIn("390,393,399,421,424,431", text)
+        self.assertEqual(len(self.code), 8)           # exactly A..H
+        for i, s in enumerate(self.code):
+            ast.parse(s, filename=f"cell-{chr(65+i)}")
 
-    def test_code_cells_compile(self):
-        for i, cell in enumerate(self.nb["cells"]):
-            if cell["cell_type"] == "code":
-                ast.parse("".join(cell["source"]), filename=f"cell{i}")
+    def test_cells_A_to_H_in_order(self):
+        idx = [self.indices(f"Cell {x}") for x in "ABCDEFGH"]
+        missing = [x for x, j in zip("ABCDEFGH", idx) if not j]
+        self.assertFalse(missing, missing)
+        first = [j[0] for j in idx]
+        self.assertEqual(first, sorted(first))
+
+    def test_frozen_pins_present(self):
+        for needle in ("7713aa0d0d351e4117a8befeb8541f3a8ebd3368",
+                       "e31a56fe1d9b4de25c8697f3a28b75892941cc72",
+                       "bc8119886cc3aaf6f57d9b1f8c548cfcff8dffc9"):
+            self.assertIn(needle, self.text)
+        self.assertNotIn("hardtarget", self.text.lower())
+
+    def test_gpu_gate_first_controlled_no_cpu(self):
+        gate = self.indices("GPU_UNAVAILABLE")[0]
+        self.assertEqual(gate, 0)
+        self.assertIn("COMPUTE_QUOTA_BLOCKED", self.code[gate])
+        self.assertIn("raise SystemExit(2)", self.code[gate])
+        self.assertIn("Do NOT continue on CPU", self.code[gate])
+        self.assertLess(gate, self.indices("drive.mount")[0])
+
+    def test_drive_before_project_before_env(self):
+        mount = self.indices("drive.mount")[0]
+        project = self.indices("PROJECT_PIN")[0]
+        env = self.indices("Miniforge3-Linux-x86_64.sh")[0]
+        self.assertLess(mount, project)
+        self.assertLess(project, env)
+
+    def test_private_project_pinned_and_token_never_printed(self):
+        self.assertIn("SyzenShen/egfr-binder-challenge.git", self.text)
+        self.assertIn("userdata.get('GITHUB_TOKEN')", self.text)
+        self.assertIn("http.extraheader=AUTHORIZATION: bearer {token}",
+                      self.text)
+        self.assertNotIn("x-access-token", self.text)
+        self.assertNotIn("print(token", self.text)
+        self.assertIn("project_commit == PROJECT_PIN", self.text)
+        self.assertIn("files.upload()", self.text)
+        self.assertIn("missing project artifacts", self.text)
+        self.assertIn("6ARU_chainA_domain3_310-481.pdb", self.text)
+
+    def test_upstream_env_spec_present(self):
+        for needle in ("Miniforge3-Linux-x86_64.sh", "python=3.10",
+                       "jax=0.6.0", "jaxlib=0.6.0=*cuda*",
+                       "CONDA_OVERRIDE_CUDA", "'12.6'", "numpy<2.0.0",
+                       "flax<0.10.0", "-c", "conda-forge", "nvidia"):
+            self.assertIn(needle, self.text, needle)
+
+    def test_colabdesign_pinned_and_no_deps_inside_env(self):
+        self.assertIn("e31a56fe1d9b4de25c8697f3a28b75892941cc72", self.text)
+        self.assertRegex(
+            self.text,
+            r"bin/pip', 'install', '--no-deps',\s*"
+            r"f?'git\+https://github\.com/sokrypton/ColabDesign\.git@")
+        self.assertNotIn(
+            "pip install -q git+https://github.com/sokrypton/ColabDesign.git",
+            self.text)
+
+    def test_kernel_never_imports_jax_or_colabdesign(self):
+        for i, src in enumerate(self.code):
+            self.assertIsNone(
+                re.search(r"^\s*(?:import|from)\s+(jax|colabdesign)\b",
+                          src, re.M),
+                f"system-kernel jax/colabdesign import in cell {i}")
+
+    def test_isolated_python_and_orchestrator_launch(self):
+        self.assertIn("BINDPY = f'{ENV_PREFIX}/bin/python'", self.text)
+        self.assertIn("scripts/stage2_orchestrate.py", self.text)
+        self.assertIn("'--root', PERSISTENT_ROOT", self.text)
+        self.assertNotIn("'bindcraft.py'", self.text)
+
+    def test_preflight_weights_orchestrator_order_and_exit_codes(self):
+        pf = self.indices("stage2_preflight.py', '--out'")[0]
+        wf = self.indices("'--params-dir'")[0]
+        go = self.indices("'--repo-dir', REPO_DIR")[0]
+        self.assertLess(pf, wf)
+        self.assertLess(wf, go)
+        run_cell = self.code[go]
+        self.assertIn("g.returncode == 2", run_cell)
+        self.assertIn("COMPUTE_BLOCKED", run_cell)
+        self.assertIn("SystemExit(g.returncode)", run_cell)
+
+    def test_weights_cell_is_thin_and_persistent(self):
+        wf = self.code[self.indices("'--params-dir'")[0]]
+        self.assertIn("ensure_af2_weights.py", wf)
+        self.assertIn("persistent/cache/alphafold", wf)
+        self.assertIn("present_count'] == 15", wf)
+        self.assertNotIn("alphafold_params_2022-12-06.tar", self.text)
+        self.assertNotIn("wget -c", self.text)
+        self.assertNotIn("proc.poll()", self.text)
+
+    def test_science_lives_in_scripts_not_notebook(self):
+        self.assertNotIn("target_hotspot_residues", self.text)
+        cfg = (SCRIPTS / "stage2_configure.py").read_text()
+        self.assertIn("390,393,399,421,424,431", cfg)
+        self.assertIn("[80, 80]", cfg)
+
+    def test_report_cell_and_no_runroot(self):
+        self.assertIn("persistent/reports/stage2_smoke_report.json", self.text)
+        self.assertIn("flags", self.text)
+        self.assertNotIn("RUNROOT", self.text)
+
+    def test_persistent_root_only(self):
+        self.assertIn("STAGE2_PERSISTENT_ROOT", self.text)
+        self.assertNotIn("/content/output", self.text)
 
 
 class TestPreflightVersionPolicy(unittest.TestCase):
@@ -343,107 +444,6 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
         ok, detail, _ = self.pf.run_gpu_matmul_check(jax, jnp)
         self.assertFalse(ok)
         self.assertIn("not resident", detail)
-
-
-class TestNotebookIsolatedEnvFix(unittest.TestCase):
-    """The notebook must create a fresh Colab runtimes reproducible env
-    matching upstream; it must not accept the preinstalled JAX 0.11.x.
-    """
-    @classmethod
-    def setUpClass(cls):
-        nb = json.loads((CLOUD / "stage2_bindcraft_smoke.ipynb").read_text())
-        cls.cells = nb["cells"]
-        cls.code = [
-            "".join(c["source"]) for c in cls.cells if c["cell_type"] == "code"]
-        cls.text = "\n".join(cls.code)
-
-    def indices(self, needle):
-        return [i for i, s in enumerate(self.code) if needle in s]
-
-    def test_upstream_env_spec_present(self):
-        for needle in ("Miniforge3-Linux-x86_64.sh", "python=3.10",
-                       "jax=0.6.0", "jaxlib=0.6.0=*cuda*",
-                       "CONDA_OVERRIDE_CUDA", "'12.6'", "numpy<2.0.0",
-                       "flax<0.10.0", "-c", "conda-forge", "nvidia"):
-            self.assertIn(needle, self.text, needle)
-
-    def test_colabdesign_pinned_and_no_deps_inside_env(self):
-        self.assertIn(
-            "e31a56fe1d9b4de25c8697f3a28b75892941cc72", self.text)
-        self.assertRegex(
-            self.text,
-            r"ENV_PREFIX\}/bin/pip', 'install', '--no-deps',\s*"
-            r"f?'git\+https://github\.com/sokrypton/ColabDesign\.git@")
-        # the old broken attempt-001 command must never come back
-        self.assertNotIn(
-            "pip install -q git+https://github.com/sokrypton/ColabDesign.git",
-            self.text)
-
-    def test_kernel_never_uses_preinstalled_jax_or_colabdesign(self):
-        for i, src in enumerate(self.code):
-            self.assertIsNone(
-                re.search(r"^\s*(?:import|from)\s+(jax|colabdesign)\b",
-                          src, re.M),
-                f"system-kernel jax/colabdesign import in code cell {i}")
-
-    def test_compute_subprocesses_use_isolated_python(self):
-        self.assertIn("BINDPY = f'{ENV_PREFIX}/bin/python'",
-                      self.text)
-        self.assertIn("[BINDPY, '-u', 'bindcraft.py'", self.text)
-
-    def test_preflight_uploaded_and_runs_before_weights_and_pdl1(self):
-        self.assertTrue(
-            any("'/content/bindcraft_preflight.py'" in s for s in self.code))
-        gate = self.indices("bindcraft_preflight.py")[0]
-        weights = self.indices("alphafold_params_2022-12-06.tar")[0]
-        pdl1 = self.indices("'pdl1_official_smoke'")[0]
-        self.assertLess(gate, weights)
-        self.assertLess(weights, pdl1)
-
-    def test_preflight_gate_asserts_hard_stop(self):
-        gate_cells = self.indices("PRE-FLIGHT FAILED")
-        self.assertTrue(gate_cells)
-        self.assertIn("assert pfp.returncode == 0 and pf['passed']",
-                      self.code[gate_cells[0]])
-
-    def test_pdl1_gate_blocks_egfr(self):
-        pdl1_gate = self.indices("PDL1 relaxed trajectories")[0]
-        egfr = self.indices("job_records['egfr_d3_B_conservative']")[0]
-        self.assertLess(pdl1_gate, egfr)
-
-    def test_download_harness_is_observed_and_resumable(self):
-        """Attempt-003/004 regression: the weights cell must never go back to
-        an unobserved fire-and-forget download + blind poll. The current cell
-        uses an inline observed wget harness."""
-        # old broken patterns must not return
-        self.assertNotIn("aria2c -q -x 16", self.text)
-        self.assertNotIn("time.sleep(5)", self.text)
-        # observed child process, not fire-and-forget
-        self.assertIn("wget", self.text)
-        self.assertIn("-c", self.text)                  # resume flag
-        self.assertIn("proc.poll()", self.text)
-        self.assertIn("proc.returncode", self.text)
-        self.assertIn("download.log", self.text)
-        # fail-fast on non-zero exit with real log tail
-        self.assertIn("returncode != 0", self.text)
-        # official AF2 set is 15 files, not 14
-        self.assertIn("_multimer_v3.npz", self.text)
-        self.assertIn("_ptm.npz", self.text)
-        self.assertIn("15", self.text)
-        # skip-if-valid path
-        self.assertIn("Skipping", self.text)
-        # Cell 5 no longer requires the removed weight-fetcher script
-        upload_cell = self.code[self.indices("files.upload()")[0]]
-        self.assertNotIn("fetch_af2_weights.py", upload_cell)
-
-    def test_scientific_settings_untouched(self):
-        self.assertIn("'target_hotspot_residues': '390,393,399,421,424,431'",
-                      self.text)
-        self.assertIn("'lengths': [80, 80]", self.text)
-        self.assertIn("'target_hotspot_residues': '56'", self.text)
-        self.assertIn("'lengths': [65, 65]", self.text)
-        self.assertIn("assert diff == {'max_trajectories': (False, n)}",
-                      self.text)
 
 
 class TestAnalyzerOnSyntheticTemp(unittest.TestCase):

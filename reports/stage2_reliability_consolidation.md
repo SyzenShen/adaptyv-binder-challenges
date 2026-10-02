@@ -25,7 +25,7 @@ Colab 运行日志、用户 Drive 中实际持久化的 PDL1 relaxed PDB。
 | 005 | `aria2c` 在运行时不一定存在 | 假设预装 | FIXED | 预检下载器；无则用可保证的 `wget -c`（PATH 注入可测试） |
 | 006 | 旧逻辑只数权重文件数（`==14`），官方 tar 实际**恰好 15 个 npz** | 计数过弱，缺/多/改名都会漏判 | FIXED | `ensure_af2_weights.py`：校验精确 15 个文件名集合（5 base + 5 `_ptm` + 5 `_multimer_v3`），回归 K/L/M |
 | 007 | 用陈旧 `done.txt` 判定权重就绪 | 文件标记可被半成品/旧运行留下 | FIXED | done 标记永不权威（仅记录其存在）；以 15 个 npz 实文件精确校验为准，回归 N |
-| 008 | 每次手工上传 4 个项目文件，易漏易错 | 工件获取依赖人工 | FIXED（Checkpoint C） | notebook 按 pin 的 git commit 获取项目工件；手工上传仅作 fallback |
+| 008 | 每次手工上传 4 个项目文件，易漏易错 | 工件获取依赖人工 | FIXED | notebook Cell C 按精确 pin commit `bc81198` 经 git（Colab Secret token，不打印）获取项目工件并校验 SHA256；手工 tarball 上传仅作 fallback |
 | 009 | Cell 10 在运行时重启后失败（`RUNROOT` 未定义） | 可执行逻辑依赖前序 cell 的内核变量 | FIXED | 所有路径来自 `stage2_paths.Paths`（`STAGE2_PERSISTENT_ROOT` 可覆盖） |
 | 010 | 门控猜 `RUNROOT/.../Trajectory/Relaxed`，与真实 design_path 脱节 | 路径重复推断 | FIXED | relaxed 目录一律由 config/manifest 里的 `design_path` 推导 |
 | 011 | 运行时 reset 抹掉 `/content`（env、bindcraft、PDB、settings 全没了），但历史输出还显示在 notebook 里造成错觉 | Colab 临时盘非持久 | FIXED | 昂贵产物全部落 Drive `persistent/` + job 目录；reset 后按门控重建临时件 |
@@ -87,13 +87,18 @@ Colab 运行日志、用户 Drive 中实际持久化的 PDL1 relaxed PDB。
 stdlib `unittest`：`tests/test_stage2.py`（A–Z 合并回归 + 静态检查），并保持
 `tests/` 其余套件通过；另跑 `.venv` pytest。伪造 subprocess / PATH 注入 / 临时目录 +
 `STAGE2_PERSISTENT_ROOT`；不下载任何权重、不跑 GPU（单元测试/合成数据/dry-run only）。
-当前 **105/105**（Checkpoint B 后；K/L/M/N/O/P + 下载成功/失败/归档/dry-run 已覆盖）。
+当前 **109/109**（Checkpoint C 后；A–Z 合并回归 + 薄 notebook 静态守卫 +
+权重精确集合/可观测下载/dry-run 全覆盖）。
 
 ## 七、提交检查点
 
 - Checkpoint A：paths/preflight/configure/checkpoint/run_job/analyze/orchestrate + GPU 门 + manifest。
-  已 push：`f8b9f0d`（ls-remote 已核实）。
-- Checkpoint B：AF2 缓存/下载器/15 文件校验 + matmul 元素级语义修正。已提交（待 push 核实）。
-- Checkpoint C：薄 notebook + 恢复 UX + 文档（待做）。
+  已 push 并 ls-remote 核实：`f8b9f0d1b75926b5e83a7c924558fab7980ace85`。
+- Checkpoint B：AF2 缓存/下载器/15 文件校验 + matmul 元素级语义修正。
+  已 push 并 ls-remote 核实：`bc8119886cc3aaf6f57d9b1f8c548cfcff8dffc9`
+  （此 SHA 同时作为 notebook Cell C 的项目工件 pin）。
+- Checkpoint C：薄 notebook（A–H）、pin-commit 工件获取与 tarball fallback、
+  恢复 UX、README/RUNBOOK/HUMAN_ACTIONS/DECISIONS 文档更新。SHA 以 git log /
+  `git ls-remote` 与最终交接报告为准（提交无法自引其 SHA）。
 
 每个检查点：测试 → commit → push → `git ls-remote` 确认远端 SHA。

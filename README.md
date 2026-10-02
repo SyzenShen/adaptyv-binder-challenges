@@ -6,15 +6,22 @@ De novo 单链 minibinder（40–100 aa）设计项目：目标是人 EGFR 胞�
 
 ## 当前阶段
 
-阶段 0（规则 / 环境 / 仓库 / 最小项目）— 详见 [STATE.md](STATE.md)。
+阶段 2 云端 smoke test — 可靠性合并已完成（Checkpoint A/B/C），等待用户在 Colab 用
+A–H 薄 notebook 跑/恢复一次真实 smoke（动作 A7）；不启动 EGFR 生产生成。
+详见 [STATE.md](STATE.md)、[RUNBOOK.md](RUNBOOK.md) §7 与
+[reports/stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)。
 
 ## 目录
 
 - `MASTER_PROMPT.md` — 总控指令（项目宪法，每次恢复任务先读它和 STATE.md）
-- `configs/` — 已核实的比赛参数（`competition.json`）与预算（`budget.yaml`，当前 paid_budget=0）
-- `scripts/` — 流水线脚本（目前仅有提交序列格式校验）
-- `notebooks/` — 最薄 Colab 入口（阶段 2）
-- `data/raw|processed|inbox/` — 原始目标文件、处理结果、云端产物回传收件箱（大文件不进 git）
+- `configs/` — 比赛参数（`competition.json`）、预算（`budget.yaml`，当前 paid_budget=0）、BindCraft 冻结配置（`bindcraft/`；运行时由 `scripts/stage2_configure.py` 确定性再生成并哈希）
+- `scripts/` — 流水线与 Stage 2 引擎：提交序列校验、Domain III 裁剪、几何分析、
+  `stage2_paths/preflight/ensure_af2_weights/configure/checkpoint/run_job/analyze/orchestrate`
+  （持久化、可重启、幂等的 smoke 工作流；科学算法不在 notebook 内）
+- `cloud/stage2_bindcraft_smoke.ipynb` — Colab A–H 薄前端（GPU 门 → Drive →
+  pin commit 取工件 → 隔离环境 → preflight → 权重 → 单个恢复 cell → 报告）
+- `data/raw|processed|inbox/` — 原始目标文件、处理结果（含冻结 crop PDB
+  `6ARU_chainA_domain3_310-481.pdb`）、云端产物回传收件箱（大文件不进 git）
 - `results/`、`reports/`、`submission/`、`tests/`
 - `RUNBOOK.md` / `DECISIONS.md` / `HUMAN_ACTIONS.md` / `ASK_SUPERVISOR.md`
 
