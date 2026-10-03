@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-02 ｜ 阶段：**2 云端 smoke test — 可靠性合并 Checkpoint A/B/C 全部完成并 push 核实（A=`f8b9f0d`，B=`bc81198`；C 见 git log/ls-remote）；薄 A–H notebook + 单一恢复 cell G，工件按 pin commit `bc81198` 获取；BUG 001-015 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；回归 109/109 双套件通过；等待用户 A7 在 Colab 跑/恢复一次真实 smoke；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 跑薄 notebook（reset 后从 A 跑到 G 即恢复）、A6 Slack 截图、A3 资格确认
+最后更新：2026-10-03 ｜ 阶段：**2 云端 smoke test — 可靠性合并 Checkpoint A/B/C 完成并 push 核实（A=`f8b9f0d`，B=`bc81198`；C 见 git log/ls-remote）；2026-10-03 按用户六条指令完成 D-019 per-model PyRosetta relaxation 容错（BUG 016，唯一授权上游窄补丁，BindCraft pin `7713aa0` 不变；补丁+应用器+pristine 夹具+JSONL 记录+manifest 必终结；124/124 双套件通过；Checkpoint D/E 提交/push/ls-remote 见本文件末尾回填）；薄 A–H notebook + 单一恢复 cell G，工件按 pin commit 获取；BUG 001-016 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；等待用户 A7 在 Colab 跑/恢复一次真实 smoke；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 跑薄 notebook（reset 后从 A 跑到 G 即恢复；Cell D 补丁步骤幂等）、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -9,7 +9,7 @@
 | 0 规则/环境/仓库/最小项目 | ✅ 完成（push 已核实） | 远端 main @ 24d362c |
 | 1 目标/映射/表位候选 | ✅ 完成（测试 22/22） | 科学确认点 A 已被 A+ 取代 |
 | 1.5 目标+assay 感知表位审计 | ✅ 完成（测试 36/36） | A+ 已由用户 2026-10-01 批准（D-013） |
-| 2 云端 smoke test | 🟡 可靠性合并完成（A/B/C push 核实），待 A7 云端复测 | 实测 T4 15GB；PDL1 成功 run 已持久化（零最终接受）；薄 A–H notebook + 检查点幂等恢复就绪；109/109 测试 |
+| 2 云端 smoke test | 🟡 可靠性合并完成（A/B/C push 核实）+ D-019 容错补丁（Checkpoint D/E），待 A7 云端复测 | 实测 T4 15GB；PDL1 成功 run 已持久化（零最终接受）；薄 A–H notebook + 检查点幂等恢复就绪；124/124 测试 |
 | 3 小批次生成与筛选 | ⏳ 未开始 | 依赖 smoke 报告经用户复核 |
 | 4 双物种复核 / 完整 ECD | ⏳ 未开始 | 另依赖 A2 |
 | 5 pH 假设与有限重设计 | ⏳ 未开始 | |
@@ -72,9 +72,24 @@
 - **Checkpoint C（2026-10-02 完成；commit/push/ls-remote 见 git log）**：[cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 重建为 2 markdown + 8 个薄代码 cell（A GPU 门 rc2 绝不 CPU；B Drive 挂载；C 经 Colab Secret `GITHUB_TOKEN` 按**精确 pin commit `bc81198`** clone/fetch 私有仓库并校验 SHA/SHA256，token 不打印，手工 tarball 仅 fallback；D BindCraft `7713aa0` + py3.10/jax0.6.0 隔离环境幂等构建 + crop PDB 身份校验；E preflight；F 权重精确 15 npz/缓存/续传；G 唯一昂贵 cell 运行单一 orchestrator（PDL1 完成即 skip、失败阻断 EGFR）；H 持久报告 + py3Dmol）。文档：README 当前阶段/目录、RUNBOOK §7（新 A–H 流程 + §7.3 reset 恢复 + §7.4 配额 + §7.5 自有 Linux GPU 服务器变体）、HUMAN_ACTIONS A7（先配 GITHUB_TOKEN、再从 A 跑到 G）、DECISIONS D-018。回归 **109/109**（新增 TestThinNotebook 16 个静态守卫：锚点区分 Cell C 工件名与真正调用点、禁止 devices()[/14 计数/RUNROOT/aria2c 16 线程/盲 sleep）。
 - 冻结科学零改动：不做 EGFR 生产采样、不跑 broad、不加轨迹、不改表位、不付费；`experimentally_validated` 恒 false；paid_budget=0。
 
+### D-019 per-model relaxation 容错（2026-10-03，BUG 016，Checkpoint D/E）
+
+- 触发：用户六条明确指令——relaxation 未产出预期 per-model PDB 时：①`clean_pdb()` 前先验证产物；②记录 candidate/model 级失败；③保留 unrelaxed PDB；④继续下一个 MPNN candidate；⑤不终止整条 BindCraft run；⑥子进程失败后 manifest 仍必终结。
+- 上游事实（pin `7713aa0`，2026-10-03 实拉核实）：`pr_relax`、trajectory relax（bindcraft.py L128）、per-model 打分（L~248）、finalize（L371–389）全部零异常处理；缺 relaxed PDB 即进程崩溃 + 二次 copy 崩溃。
+- 交付物：
+  - [patches/bindcraft-7713aa0-relax-tolerance.patch](patches/bindcraft-7713aa0-relax-tolerance.patch)：4 文件统一 diff（`generic_utils.py` 新增 `record_stage2_relax_failure` 写 JSONL；`pyrosetta_utils.py` 新增 `RelaxationFailure` + clean_pdb 前后双重校验；`colabdesign_utils.py` per-model try/except→记录/留 PDB/continue；`bindcraft.py` trajectory try/except + 打分块 relaxed 存在门 + finalize 只在现存 relaxed PDB 选优/全无则跳过 candidate）。仅控制流，无科学改动。
+  - [scripts/apply_bindcraft_patch.py](scripts/apply_bindcraft_patch.py)：**唯一入口**；HEAD==pin 才允许，`git apply --check` 先行，拒绝漂移/半补丁/错 commit，pre/post SHA256 写 `persistent/metadata/bindcraft_patch.json`。
+  - [scripts/stage2_relax_failures.py](scripts/stage2_relax_failures.py)：JSONL 只读解析（坏行计数），`unrelaxed_without_relaxed` 留存清单。
+  - [scripts/stage2_run_job.py](scripts/stage2_run_job.py)：子进程段 try/finally，启动异常记 `launch_error`、状态 FAILED，终态 manifest 嵌入 relax 失败汇总字段。
+  - [scripts/stage2_orchestrate.py](scripts/stage2_orchestrate.py)：env 后/preflight 前新增 `step_bindcraft_patch()`（dry-run=`SKIPPED_DRY_RUN`，失败=`BINDCRAFT_PATCH_FAIL`），报告 JSON/MD 带补丁状态与每 job 失败计数。
+  - [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) Cell D：pin checkout SHA 校验后、长环境构建前调用应用器并断言 APPLIED/ALREADY_APPLIED（reset 后幂等）。
+  - pristine 测试 oracle：[tests/fixtures/bindcraft_7713aa0_pristine/](tests/fixtures/bindcraft_7713aa0_pristine/)（4 上游文件 + PROVENANCE SHA256；仅测试用，不进 results/ 或 submission/）。
+- 验证：临时 git 树全生命周期（NOT_PATCHED→APPLIED→ALREADY_APPLIED→VERIFIED）、漂移拒绝、半补丁歧义、commit 不匹配、CLI 元数据；坏行 JSONL 解析；启动失败仍终结 FAILED manifest。回归 **124/124**（unittest 与 .venv pytest 双跑）。
+- 提交（两提交 pin 舞，push 后用 ls-remote 核实并回填）：D=____（含补丁/应用器/测试/文档，Cell C PROJECT_PIN 仍指 C `bc81198`）；E=____（仅把 PROJECT_PIN 与 `test_frozen_pins_present` 字面量 bump 到 D）。
+
 ## 当前 Blockers（真实阻挡）
 
-1. **AWAITING_CLOUD_SMOKE_RERUN (A7)** — 可靠性合并 A/B/C 已完成（BUG 001–015 全部 FIXED 或 EVIDENCE；109/109 测试）。等用户在 Colab：配 `GITHUB_TOKEN` secret → T4 GPU → 上传薄 notebook → 从 Cell A 顺序跑到 G；已持久化的 PDL1 run 会被采纳为 LEGACY_CHECKPOINT（或校验通过直接 SKIP），权重走 Drive 缓存。reset/配额中断后从 A 跑到 G 即可恢复。PDL1 环境门（rc0 + relaxed PDB）未重新证实前阶段 3 不得开始。
+1. **AWAITING_CLOUD_SMOKE_RERUN (A7)** — 可靠性合并 A/B/C + D-019 容错补丁已完成（BUG 001–016 全部 FIXED 或 EVIDENCE；124/124 测试）。等用户在 Colab：配 `GITHUB_TOKEN` secret → T4 GPU → 上传薄 notebook → 从 Cell A 顺序跑到 G（Cell D 自动幂等打补丁）；已持久化的 PDL1 run 会被采纳为 LEGACY_CHECKPOINT（或校验通过直接 SKIP），权重走 Drive 缓存。reset/配额中断后从 A 跑到 G 即可恢复。PDL1 环境门（rc0 + relaxed PDB）未重新证实前阶段 3 不得开始。
 2. **MOUSE_CONSTRUCT_PROOF_PENDING** — mouse 25–647 仅 Slack 转述（A2/A6）；不阻塞 human smoke，阻塞阶段 4 mouse 验证。
 3. **SLACK_PROVENANCE_PENDING (A6)** — 7 条 Slack 主张无截图（含上条）；[INDEX](reports/slack_provenance/INDEX.md) 全 PENDING。
 4. **ELIGIBILITY/REGISTRATION_PENDING** — Track 3 资格/注册用户尚未确认（A3）；不阻塞技术 smoke，阻塞提交。

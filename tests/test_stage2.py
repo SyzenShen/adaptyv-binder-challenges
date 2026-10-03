@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -22,6 +23,8 @@ PROC = ROOT / "data" / "processed"
 CFG = ROOT / "configs" / "bindcraft"
 CLOUD = ROOT / "cloud"
 SCRIPTS = ROOT / "scripts"
+PATCHES = ROOT / "patches"
+PRISTINE = (ROOT / "tests" / "fixtures" / "bindcraft_7713aa0_pristine")
 
 sys.path.insert(0, str(SCRIPTS))
 import stage2_paths as sp
@@ -29,6 +32,8 @@ import stage2_checkpoint as ckpt
 import stage2_configure as configure
 import stage2_run_job as runner
 import stage2_orchestrate as orchestrate
+import stage2_relax_failures as srf
+import apply_bindcraft_patch as abp
 import ensure_af2_weights as eaw
 
 ENVELOPE = list(range(390, 404)) + list(range(421, 432))
@@ -268,6 +273,23 @@ class TestThinNotebook(unittest.TestCase):
     def test_persistent_root_only(self):
         self.assertIn("STAGE2_PERSISTENT_ROOT", self.text)
         self.assertNotIn("/content/output", self.text)
+
+    def test_cell_d_applies_pinned_relax_patch(self):
+        hits = self.indices("apply_bindcraft_patch.py")
+        self.assertEqual(len(hits), 1)                  # only Cell D
+        cell_d = self.code[hits[0]]
+        self.assertIn("bindcraft-7713aa0-relax-tolerance.patch", cell_d)
+        self.assertIn("persistent/metadata/bindcraft_patch.json", cell_d)
+        self.assertIn("'ALREADY_APPLIED'", cell_d)
+        self.assertIn("relax_failures.jsonl", cell_d)
+        # applied AFTER the pinned checkout is verified, BEFORE the env build
+        self.assertLess(cell_d.index("assert sha == PINNED"),
+                        cell_d.index("apply_bindcraft_patch.py"))
+        self.assertLess(cell_d.index("apply_bindcraft_patch.py"),
+                        cell_d.index("Miniforge3-Linux-x86_64.sh"))
+        # per-model failure semantics are documented in the cell
+        self.assertIn("STAGE2_RELAX_FAILURE", cell_d)
+        self.assertIn("retain", cell_d.lower())
 
 
 class TestPreflightVersionPolicy(unittest.TestCase):
@@ -1145,7 +1167,8 @@ class TestReliabilityStaticGuards(unittest.TestCase):
         "stage2_paths.py", "stage2_preflight.py", "stage2_configure.py",
         "stage2_checkpoint.py", "stage2_run_job.py", "stage2_analyze.py",
         "stage2_orchestrate.py", "bindcraft_preflight.py",
-        "ensure_af2_weights.py",
+        "ensure_af2_weights.py", "apply_bindcraft_patch.py",
+        "stage2_relax_failures.py",
     ]
 
     def test_forbidden_patterns_absent(self):
@@ -1161,6 +1184,342 @@ class TestReliabilityStaticGuards(unittest.TestCase):
         src = (SCRIPTS / "stage2_orchestrate.py").read_text()
         self.assertIn("GPU_UNAVAILABLE", src)
         self.assertNotIn("cpu fallback", src.lower())
+
+
+def _git(args, cwd):
+    p = subprocess.run(["git", *args], cwd=str(cwd),
+                       capture_output=True, text=True)
+    assert p.returncode == 0, p.stderr
+    return p.stdout.strip()
+
+
+class TestRelaxFailureRecords(unittest.TestCase):
+    """D-019 harness-side reader for the upstream patch's JSONL log."""
+
+    def _write_design(self, td, records, corrupt=False):
+        dp = Path(td) / "design"
+        log = dp / srf.RELAX_FAILURE_LOG
+        log.parent.mkdir(parents=True)
+        lines = [json.dumps(r, sort_keys=True) for r in records]
+        if corrupt:
+            lines.append("{this is not valid json")
+        log.write_text("\n".join(lines) + "\n")
+        return dp
+
+    def test_missing_log_is_empty_not_error(self):
+        with tempfile.TemporaryDirectory() as td:
+            recs, corrupt = srf.load_records(td)
+            self.assertEqual(recs, [])
+            self.assertEqual(corrupt, 0)
+            summ = srf.summarize(td)
+            self.assertFalse(summ["log_present"])
+            self.assertEqual(summ["relax_failure_count"], 0)
+            self.assertEqual(summ["unrelaxed_without_relaxed"], [])
+            self.assertEqual(summ["relax_failures_by_stage"], {
+                "trajectory_relax": 0, "mpnn_relax": 0, "mpnn_finalize": 0})
+
+    def test_counts_by_stage_and_error_type_corrupt_tolerated(self):
+        recs = [
+            {"stage": "mpnn_relax", "model": 2,
+             "error_type": "RelaxationFailure",
+             "retained_unrelaxed": True,
+             "action": "skipped_model_continue"},
+            {"stage": "trajectory_relax", "model": None,
+             "error_type": "FileNotFoundError",
+             "action": "skipped_trajectory_continue"},
+            {"stage": "mpnn_finalize",
+             "error_type": "RelaxedPDBMissing",
+             "action": "skipped_candidate_continue"},
+        ]
+        with tempfile.TemporaryDirectory() as td:
+            dp = self._write_design(td, recs, corrupt=True)
+            loaded, corrupt = srf.load_records(str(dp))
+            self.assertEqual(len(loaded), 3)
+            self.assertEqual(corrupt, 1)
+            summ = srf.summarize(str(dp))
+            self.assertTrue(summ["log_present"])
+            self.assertEqual(summ["relax_failure_count"], 3)
+            self.assertEqual(summ["relax_failures_corrupt_lines"], 1)
+            self.assertEqual(summ["relax_failures_by_stage"], {
+                "trajectory_relax": 1, "mpnn_relax": 1,
+                "mpnn_finalize": 1})
+            self.assertEqual(summ["relax_failures_by_error_type"], {
+                "RelaxationFailure": 1, "FileNotFoundError": 1,
+                "RelaxedPDBMissing": 1})
+            # records carry the exact six-directive semantics
+            self.assertTrue(all(r.get("retained_unrelaxed") is not False
+                                for r in loaded if "model" in r and r))
+
+    def test_unrelaxed_without_relaxed_listing(self):
+        with tempfile.TemporaryDirectory() as td:
+            dp = Path(td) / "design"
+            mpnn = dp / "MPNN"
+            rel = mpnn / "Relaxed"
+            rel.mkdir(parents=True)
+            (mpnn / "cand_s1_model1.pdb").write_text("UNRELAXED-1")
+            (mpnn / "cand_s1_model2.pdb").write_text("UNRELAXED-2")
+            (rel / "cand_s1_model2.pdb").write_text("RELAXED-2")
+            (mpnn / "notes.txt").write_text("ignored")
+            retained = srf.unrelaxed_without_relaxed(str(dp))
+            self.assertEqual(retained,
+                             [str(mpnn / "cand_s1_model1.pdb")])
+
+
+class TestBindCraftRelaxTolerancePatch(unittest.TestCase):
+    """The one authorized upstream patch (D-019) applies deterministically to
+    the pristine pinned tree and refuses every other state."""
+
+    PATCH = PATCHES / "bindcraft-7713aa0-relax-tolerance.patch"
+    FILES = {
+        "bindcraft.py":
+            "cc1103a96ac4b414d9e765c0ba58302914aacc3f47504a2b669a5a47f0deb33a",
+        "functions/colabdesign_utils.py":
+            "151af44170f1450c01144d6a3b4f1becc7dfea86ba37eb0d3ee0c158d9e667d9",
+        "functions/generic_utils.py":
+            "e95f9fdaf2a4ccd3263c4234ab26e0e404027ff6ece00e79bcd05f63d1d59cf9",
+        "functions/pyrosetta_utils.py":
+            "227ea5a11434f56c858d9662974eccc1341e51b28a932a418a70de2b2b7392f4",
+    }
+
+    def _pristine_repo(self, td):
+        """Copy the pristine oracle into a temp GIT repo; temp HEAD cannot be
+        the upstream SHA, so tests point expected_commit at it via the module
+        constant (the commit-equality logic itself is the thing under test)."""
+        bc = Path(td) / "bindcraft"
+        shutil.copytree(PRISTINE, bc,
+                        ignore=shutil.ignore_patterns("PROVENANCE.txt"))
+        _git(["init", "-q"], bc)
+        _git(["config", "user.email", "test@example.invalid"], bc)
+        _git(["config", "user.name", "Test"], bc)
+        _git(["add", "-A"], bc)
+        _git(["commit", "-q", "-m", "pristine bindcraft pin"], bc)
+        return bc, _git(["rev-parse", "HEAD"], bc)
+
+    def setUp(self):
+        self._orig_const = abp.BINDCRAFT_COMMIT
+        self.addCleanup(setattr, abp, "BINDCRAFT_COMMIT", self._orig_const)
+
+    def _point_at(self, head):
+        abp.BINDCRAFT_COMMIT = head
+
+    def test_pristine_oracle_hashes_match_provenance(self):
+        for rel, digest in self.FILES.items():
+            self.assertEqual(abp.sha256_file(str(PRISTINE / rel)), digest,
+                             rel)
+
+    def test_patch_artifact_encodes_the_six_directives(self):
+        text = self.PATCH.read_text()
+        for rel in self.FILES:
+            self.assertIn(f"diff --git a/{rel} b/{rel}", text)
+        for needle in ("STAGE2-PATCH", "STAGE2_RELAX_FAILURE",
+                       "class RelaxationFailure", "record_stage2_relax_failure",
+                       "relax_failures.jsonl", "BEFORE clean_pdb",
+                       "retained_unrelaxed", "skipped_model_continue",
+                       "skipped_trajectory_continue",
+                       "skipped_candidate_continue"):
+            self.assertIn(needle, text)
+        # preamble comment lines must not break git apply (checked e2e below)
+        self.assertTrue(text.startswith("# BindCraft per-model"))
+
+    def test_apply_idempotence_verify_and_compilability(self):
+        with tempfile.TemporaryDirectory() as td:
+            bc, head = self._pristine_repo(td)
+            self._point_at(head)
+
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH),
+                verify_only=True)
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "NOT_PATCHED")
+
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 0, meta)
+            self.assertEqual(meta["status"], "APPLIED")
+            self.assertEqual(meta["bindcraft_commit_observed"], head)
+            self.assertEqual(meta["patch_sha256"],
+                             abp.sha256_file(str(self.PATCH)))
+            self.assertTrue(all(abp.marker_state(str(bc)).values()))
+            # patched python parses (never imported: pyrosetta is absent here)
+            for rel in self.FILES:
+                ast.parse((bc / rel).read_text(), filename=rel)
+            # pre/post metadata captured
+            self.assertIn("files_pre", meta)
+            self.assertNotEqual(meta["files"], meta["files_pre"])
+
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 0)
+            self.assertEqual(meta["status"], "ALREADY_APPLIED")
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH),
+                verify_only=True)
+            self.assertEqual(rc, 0)
+            self.assertEqual(meta["status"], "VERIFIED")
+
+    def test_drifted_tree_is_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            bc, head = self._pristine_repo(td)
+            self._point_at(head)
+            target = bc / "functions" / "colabdesign_utils.py"
+            target.write_text(target.read_text().replace(
+                "            pr_relax(complex_pdb, mpnn_relaxed)\n",
+                "            pr_relax(complex_pdb, mpnn_relaxed)  # drift\n"))
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "APPLY_CHECK_FAILED")
+            # tree left untouched
+            self.assertFalse(any(abp.marker_state(str(bc)).values()))
+
+    def test_partially_patched_tree_is_ambiguous_and_untouched(self):
+        with tempfile.TemporaryDirectory() as td:
+            bc, head = self._pristine_repo(td)
+            self._point_at(head)
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 0)
+            # revert ONE of the four files to pristine
+            shutil.copy2(PRISTINE / "functions" / "generic_utils.py",
+                         bc / "functions" / "generic_utils.py")
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "PATCH_STATE_AMBIGUOUS")
+            self.assertIn("3/4", meta["note"])
+
+    def test_commit_mismatch_refuses(self):
+        with tempfile.TemporaryDirectory() as td:
+            bc, head = self._pristine_repo(td)
+            self._point_at("0" * 40)          # deliberately wrong pin
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "COMMIT_MISMATCH")
+            self.assertEqual(meta["bindcraft_commit_observed"], head)
+            self.assertFalse(any(abp.marker_state(str(bc)).values()))
+
+    def test_missing_dirs_and_non_git(self):
+        with tempfile.TemporaryDirectory() as td:
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(Path(td) / "nope"),
+                patch_path=str(self.PATCH))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "BINDCRAFT_DIR_MISSING")
+            plain = Path(td) / "plain"
+            plain.mkdir()
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(plain), patch_path=str(self.PATCH))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "NOT_A_GIT_CHECKOUT")
+            bc, head = self._pristine_repo(td)
+            self._point_at(head)
+            meta, rc = abp.apply_or_verify(
+                bindcraft_dir=str(bc),
+                patch_path=str(Path(td) / "nope.patch"))
+            self.assertEqual(rc, 1)
+            self.assertEqual(meta["status"], "PATCH_MISSING")
+
+    def test_cli_writes_metadata(self):
+        with tempfile.TemporaryDirectory() as td:
+            bc, head = self._pristine_repo(td)
+            self._point_at(head)
+            out = Path(td) / "meta" / "bindcraft_patch.json"
+            rc = abp.main(["--bindcraft-dir", str(bc),
+                           "--patch", str(self.PATCH), "--out", str(out)])
+            self.assertEqual(rc, 0)
+            meta = json.loads(out.read_text())
+            self.assertEqual(meta["status"], "APPLIED")
+            rc = abp.main(["--bindcraft-dir", str(Path(td) / "missing")])
+            self.assertEqual(rc, 1)
+
+
+class TestRunJobFinalizesManifestOnFailure(unittest.TestCase):
+    """D-019 requirement 6: even a child-process/launch failure terminalizes
+    the manifest, and per-model relax records are embedded."""
+
+    def test_launch_failure_terminal_manifest_with_records(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd = make_fake_bindcraft(td)
+            paths = sp.Paths(root=Path(td) / "drive")
+            paths.ensure()
+            man = configure.write_all(paths, bindcraft_dir=str(bd))
+            tag = sp.JOB_PDL1
+            sp_path = bd / "settings_target" / man[tag]["target_config_name"]
+            ap_path = bd / man[tag]["advanced_config_name"]
+            design_path = json.loads(sp_path.read_text())["design_path"]
+
+            # simulate one per-model relax failure already recorded on disk,
+            # one retained unrelaxed PDB, plus a corrupt log line
+            dp = Path(design_path)
+            (dp / "MPNN").mkdir(parents=True)
+            (dp / "MPNN" / "pdl1_s1_model1.pdb").write_text("UNRELAXED")
+            (dp / srf.RELAX_FAILURE_LOG).write_text(
+                json.dumps({
+                    "time_utc": "2026-10-03T00:00:00Z",
+                    "stage": "mpnn_relax", "candidate": "pdl1_s1",
+                    "model": 1, "error_type": "RelaxationFailure",
+                    "error": "missing relaxed pdb BEFORE clean_pdb",
+                    "retained_unrelaxed": True,
+                    "action": "skipped_model_continue"}) + "\n"
+                + "CORRUPT-LINE\n")
+
+            out, action = runner.run_job(
+                tag=tag, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd),
+                bindpy=str(Path(td) / "no-such-bindpython"),
+                dry_run=False)
+            self.assertEqual(action, "RAN")
+            self.assertEqual(out["status"], "FAILED")
+            self.assertIsNone(out["returncode"])
+            self.assertIsNotNone(out["launch_error"])
+            self.assertEqual(out["launch_error"]["error_type"],
+                             "FileNotFoundError")
+            self.assertTrue(out["end_time"])
+            self.assertTrue(out["wall_time_s"] >= 0)
+            # D-019 record embedding
+            self.assertTrue(out["relax_failure_log_present"])
+            self.assertEqual(out["relax_failure_count"], 1)
+            self.assertEqual(out["relax_failures_by_stage"]["mpnn_relax"], 1)
+            self.assertEqual(out["relax_failures_corrupt_lines"], 1)
+            self.assertEqual(out["relax_failures"][0]["model"], 1)
+            retained = [Path(p).name
+                        for p in out["unrelaxed_without_relaxed"]]
+            self.assertEqual(retained, ["pdl1_s1_model1.pdb"])
+            # terminal manifest really persisted
+            on_disk = ckpt.load_manifest(paths, tag)
+            self.assertEqual(on_disk["status"], "FAILED")
+            self.assertEqual(on_disk["launch_error"]["error_type"],
+                             "FileNotFoundError")
+            self.assertEqual(on_disk["relax_failure_count"], 1)
+
+
+class TestOrchestratorPatchStep(unittest.TestCase):
+    """D-019 patch is a first-class orchestrator step: dry-run skips it,
+    real runs invoke the applier and fail the stage on non-zero rc."""
+
+    def test_step_wired_into_run_and_report(self):
+        src = (SCRIPTS / "stage2_orchestrate.py").read_text()
+        for needle in ("apply_bindcraft_patch.py",
+                       "bindcraft_patch.json",
+                       "BINDCRAFT_PATCH_FAIL", "SKIPPED_DRY_RUN",
+                       "step_bindcraft_patch"):
+            self.assertIn(needle, src)
+        # report payload carries patch status (renderer consumes it)
+        self.assertIn('"bindcraft_patch": self.state.get("bindcraft_patch")',
+                      src)
+
+    def test_dry_run_skips_patch_step_but_records_it(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td) / "repo"
+            repo.mkdir()
+            o = orchestrate.Orchestrator(
+                repo_dir=str(repo),
+                bindcraft_dir=str(Path(td) / "bindcraft"),
+                bindpy=sys.executable, root=str(Path(td) / "drive"),
+                dry_run=True)
+            self.assertTrue(o.step_bindcraft_patch())
+            self.assertEqual(o.state["bindcraft_patch"], "SKIPPED_DRY_RUN")
 
 
 if __name__ == "__main__":

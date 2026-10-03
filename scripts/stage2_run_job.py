@@ -20,6 +20,7 @@ import time
 
 from stage2_paths import BINDPY, BINDCRAFT_DIR, sha256_file
 import stage2_checkpoint as ckpt
+import stage2_relax_failures as relax_fail
 
 OOM_PATTERNS = ("out of memory", "resource exhausted", "cuda_error_out_of_memory")
 SEED_RE = re.compile(r"_s(\d+)(?:_model\d+)?\.pdb$")
@@ -158,39 +159,63 @@ def run_job(*, tag, settings_path, advanced_path, paths,
     stop = threading.Event()
     th = threading.Thread(target=_poll_vram, args=(vram_path, stop),
                           daemon=True)
-    th.start()
     t0 = time.time()
-    with open(log_path, "w") as lf:
-        proc = subprocess.run(
-            [bindpy, "-u", "bindcraft.py",
-             "--settings", settings_path,
-             "--filters", "./settings_filters/default_filters.json",
-             "--advanced", advanced_path],
-            cwd=bindcraft_dir, stdout=lf, stderr=subprocess.STDOUT,
-            text=True, env=env or os.environ.copy())
-    wall = round(time.time() - t0, 1)
-    stop.set()
-    th.join(timeout=5)
-
-    log_text = ""
+    # Even if the child cannot be launched / raises, the manifest is finalized.
+    launch_error = None
+    proc_rc = None
     try:
-        with open(log_path, errors="replace") as fh:
-            log_text = fh.read()[-200000:]
-    except OSError:
-        pass
+        th.start()
+        with open(log_path, "w") as lf:
+            proc = subprocess.run(
+                [bindpy, "-u", "bindcraft.py",
+                 "--settings", settings_path,
+                 "--filters", "./settings_filters/default_filters.json",
+                 "--advanced", advanced_path],
+                cwd=bindcraft_dir, stdout=lf, stderr=subprocess.STDOUT,
+                text=True, env=env or os.environ.copy())
+        proc_rc = proc.returncode
+    except Exception as exc:                     # e.g. interpreter missing
+        launch_error = {"error_type": type(exc).__name__,
+                        "error": str(exc)[:500]}
+    finally:
+        wall = round(time.time() - t0, 1)
+        stop.set()
+        th.join(timeout=5)
 
-    relaxed = [str(p) for p in ckpt.relaxed_pdbs(design_path)]
-    status = _classify(proc.returncode, log_text)
-    manifest.update({
-        "status": status,
-        "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "returncode": proc.returncode,
-        "wall_time_s": wall,
-        "peak_vram_mib": _peak_vram(vram_path),
-        "relaxed_pdb_paths": relaxed,
-        "relaxed_pdb_sha256": {p: sha256_file(p) for p in relaxed},
-        "random_seed": _seed_from(relaxed[0]) if relaxed else None,
-        "final_design_count": _count_final_designs(design_path),
-    })
-    ckpt.save_manifest(paths, tag, manifest, force=True)
+        log_text = ""
+        try:
+            with open(log_path, errors="replace") as fh:
+                log_text = fh.read()[-200000:]
+        except OSError:
+            pass
+
+        relaxed = [str(p) for p in ckpt.relaxed_pdbs(design_path)]
+        status = ("FAILED" if launch_error
+                  else _classify(proc_rc, log_text))
+        failure_summary = relax_fail.summarize(design_path)
+        manifest.update({
+            "status": status,
+            "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "returncode": proc_rc,
+            "launch_error": launch_error,
+            "wall_time_s": wall,
+            "peak_vram_mib": _peak_vram(vram_path),
+            "relaxed_pdb_paths": relaxed,
+            "relaxed_pdb_sha256": {p: sha256_file(p) for p in relaxed},
+            "random_seed": _seed_from(relaxed[0]) if relaxed else None,
+            "final_design_count": _count_final_designs(design_path),
+            # per-model PyRosetta relaxation failures (D-019 patch record)
+            "relax_failure_log_present": failure_summary["log_present"],
+            "relax_failure_count": failure_summary["relax_failure_count"],
+            "relax_failures_by_stage":
+                failure_summary["relax_failures_by_stage"],
+            "relax_failures_by_error_type":
+                failure_summary["relax_failures_by_error_type"],
+            "relax_failures_corrupt_lines":
+                failure_summary["relax_failures_corrupt_lines"],
+            "relax_failures": failure_summary["relax_failures"],
+            "unrelaxed_without_relaxed":
+                failure_summary["unrelaxed_without_relaxed"],
+        })
+        ckpt.save_manifest(paths, tag, manifest, force=True)
     return manifest, "RAN"

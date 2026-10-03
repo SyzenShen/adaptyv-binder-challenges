@@ -96,8 +96,11 @@ notebook [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb
    - **B** 挂载 Drive 并设定 `STAGE2_PERSISTENT_ROOT`；
    - **C** clone/fetch 项目**精确 pin commit** `bc81198`，校验 SHA，记录
      crop PDB 与脚本 SHA256；
-   - **D** BindCraft pin `7713aa0` + 隔离 Miniforge py3.10/jax 0.6.0 环境
-     （幂等，首次 10–25 分钟）+ 冻结 crop PDB 就位与身份校验；
+   - **D** BindCraft pin `7713aa0` checkout 并校验 SHA 后，先确定性应用唯一
+     授权的 D-019 容错补丁（`scripts/apply_bindcraft_patch.py`，元数据写
+     `persistent/metadata/bindcraft_patch.json`，状态必须 APPLIED/ALREADY_APPLIED；
+     见 §7.7），再幂等构建隔离 Miniforge py3.10/jax 0.6.0 环境
+     （首次 10–25 分钟）+ 冻结 crop PDB 就位与身份校验；
    - **E** 隔离 env 内 preflight 硬门（版本/clear_mem/xla_bridge/真 GPU
      matmul，逐元素 ≈2048）；
    - **F** AF2 权重：本地精确 15 npz → Drive 缓存恢复 → Drive 归档解包 →
@@ -156,11 +159,34 @@ completed ≠ accepted；`final_design_count` 只数 BindCraft `Accepted/` 目�
 后最多再试 1 次）即停并交回 preflight/metadata/log，由我写 compute_escalation.md。
 smoke 复核前不跑 broad、不加轨迹、不改表位、不付费。
 
+### 7.7 Per-model PyRosetta relaxation 失败时（D-019）
+
+BindCraft pin 树在 Cell D 被确定性打上唯一授权补丁
+（[patches/bindcraft-7713aa0-relax-tolerance.patch](patches/bindcraft-7713aa0-relax-tolerance.patch)）。
+运行中某个 MPNN candidate/model relaxation 未产出预期 relaxed PDB 时：
+
+- 日志出现 `[STAGE2_RELAX_FAILURE] ...`；每个失败作为一行 JSON 追加到
+  `<design_path>/relax_failures.jsonl`（candidate/model/路径/字节/error_type）。
+- **未 relaxed 的 PDB 保留在 `MPNN/`**，该 model 跳过 relaxed-only 统计，
+  BindCraft 继续下一个 candidate/轨迹；**单模型失败不再杀死整条 run**。
+- finalize 只在实际存在的 relaxed PDB 里选最优；一个 candidate 全部 model
+  都失败时记录 `mpnn_finalize/RelaxedPDBMissing` 并跳过该 candidate。
+- `persistent/checkpoints/<job>/run_manifest.json` 无论如何都会终结，含
+  `launch_error`（子进程启动失败时）与 `relax_failure_count` /
+  `relax_failures_by_stage` / `relax_failures_by_error_type` /
+  `relax_failures_corrupt_lines` / `relax_failures` /
+  `unrelaxed_without_relaxed`；报告 MD 亦显示每 job 失败计数。
+- 排查：先看 `relax_failures.jsonl` 的 `error` 字段与 `persistent/logs/<job>.log`
+  尾部；该机制只改控制流，**不改变任何科学过滤结果**。
+- reset 后重跑 Cell D：补丁步骤幂等（`ALREADY_APPLIED`）；若 BindCraft 树被
+  手工改动导致 `PATCH_STATE_AMBIGUOUS`/`COMMIT_MISMATCH`，删除 `/content/bindcraft`
+  重新克隆即可，不要手工改树。
+
 本机制备（本机可复现）：
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 109/109 期望
+python3 -m unittest discover -s tests             # 124/124 期望
 ```
 
 本地分析回传产物（无 GPU 也能跑，纯标准库）：

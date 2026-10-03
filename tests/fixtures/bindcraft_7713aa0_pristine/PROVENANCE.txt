@@ -1,0 +1,17 @@
+Pristine upstream BindCraft files used ONLY as a test oracle for deterministic
+patch application (tests/test_stage2.py). Not imported, not executed, never
+copied into results/ or submission/.
+
+Source: https://github.com/martinpacesa/BindCraft
+Commit: 7713aa0d0d351e4117a8befeb8541f3a8ebd3368 (pinned in DECISIONS D-015)
+Fetched: 2026-10-03 (raw.githubusercontent.com)
+License: MIT (martinpacesa/BindCraft)
+
+Files / SHA256:
+cc1103a96ac4b414d9e765c0ba58302914aacc3f47504a2b669a5a47f0deb33a  bindcraft.py
+151af44170f1450c01144d6a3b4f1becc7dfea86ba37eb0d3ee0c158d9e667d9  functions/colabdesign_utils.py
+e95f9fdaf2a4ccd3263c4234ab26e0e404027ff6ece00e79bcd05f63d1d59cf9  functions/generic_utils.py
+227ea5a11434f56c858d9662974eccc1341e51b28a932a418a70de2b2b7392f4  functions/pyrosetta_utils.py
+
+Patched at Colab setup time by scripts/apply_bindcraft_patch.py using
+patches/bindcraft-7713aa0-relax-tolerance.patch (DECISIONS D-019).

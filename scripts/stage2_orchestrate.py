@@ -12,6 +12,7 @@ Flow (reports/stage2_reliability_consolidation.md §12):
   2. persistent root + configs
   3. project commit verification
   4. isolated env python must exist (notebook Cell D builds it)
+  4b. pinned BindCraft relax-tolerance patch applied/verified (D-019)
   5. preflight gate
   6. AF2 weights (local -> Drive cache -> observable download)
   7. deterministic configs
@@ -101,6 +102,8 @@ def render_report_md(rep):
          f"- generated_utc: {rep['generated_utc']}",
          f"- project_commit: `{rep.get('project_commit')}`",
          f"- bindcraft_commit: `{rep.get('bindcraft_commit')}`",
+         f"- bindcraft relax-tolerance patch (D-019): "
+         f"{rep.get('bindcraft_patch')}",
          f"- gpu: {rep.get('gpu', {}).get('name')} "
          f"({rep.get('gpu', {}).get('vram_total_mib')} MiB)",
          f"- environment: {rep['flags']['ENVIRONMENT_PASS']}",
@@ -122,6 +125,8 @@ def render_report_md(rep):
               f"- wall_time_s: {j.get('wall_time_s')}",
               f"- peak_vram_mib: {j.get('peak_vram_mib')}",
               f"- relaxed PDBs: {len(j.get('relaxed_pdb_paths', []))}",
+              f"- relax failures recorded (per model/trajectory; run "
+              f"continues): {j.get('relax_failure_count', 0)}",
               f"- final_design_count (accepted dir; null=not produced): "
               f"{j.get('final_design_count')}",
               f"- legacy: {j.get('legacy', False)}", ""]
@@ -184,6 +189,34 @@ class Orchestrator:
         self.bindcraft_commit = git_commit(self.bindcraft_dir)
         self.state["bindcraft_commit"] = self.bindcraft_commit
         print("ENV READY:", self.bindpy, "| BindCraft", self.bindcraft_commit)
+
+    def step_bindcraft_patch(self):
+        """Apply (idempotently) / verify the pinned D-019 relax-tolerance patch."""
+        if self.dry_run:
+            self.state["bindcraft_patch"] = "SKIPPED_DRY_RUN"
+            return True
+        script = os.path.join(self.repo_dir, "scripts",
+                              "apply_bindcraft_patch.py")
+        out = self.paths.metadata_dir / "bindcraft_patch.json"
+        p = subprocess.run(
+            [sys.executable, script,
+             "--bindcraft-dir", self.bindcraft_dir,
+             "--out", str(out)],
+            capture_output=True, text=True)
+        print(p.stdout[-2000:])
+        if p.returncode != 0:
+            print(p.stderr[-4000:])
+            self.state["status"] = "BINDCRAFT_PATCH_FAIL"
+            self.state["bindcraft_patch"] = "FAIL"
+            self._persist_state()
+            return False
+        try:
+            self.state["bindcraft_patch"] = json.loads(
+                out.read_text()).get("status")
+        except OSError:
+            self.state["bindcraft_patch"] = "APPLIED"
+        print("BINDCRAFT PATCH:", self.state["bindcraft_patch"])
+        return True
 
     def step_preflight(self):
         out = self.paths.metadata_dir / "preflight.json"
@@ -346,6 +379,7 @@ class Orchestrator:
                                            time.gmtime()),
             "project_commit": self.state.get("project_commit"),
             "bindcraft_commit": self.state.get("bindcraft_commit"),
+            "bindcraft_patch": self.state.get("bindcraft_patch"),
             "gpu": self.state.get("gpu"),
             "weights": self.state.get("weights"),
             "jobs": jobs_out,
@@ -378,6 +412,8 @@ class Orchestrator:
             return 2                       # controlled blocked state
         self.step_project()
         self.step_env()
+        if not self.step_bindcraft_patch():
+            return 1
         if not self.step_preflight():
             return 1
         if not self.step_weights():

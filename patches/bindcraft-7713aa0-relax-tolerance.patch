@@ -1,0 +1,282 @@
+# BindCraft per-model PyRosetta relaxation tolerance (STAGE2-PATCH)
+# upstream: github.com/martinpacesa/BindCraft @ 7713aa0d0d351e4117a8befeb8541f3a8ebd3368
+# applied deterministically by scripts/apply_bindcraft_patch.py; do not hand-edit the bindcraft tree
+diff --git a/bindcraft.py b/bindcraft.py
+index 40904f8..a0f6ea0 100644
+--- a/bindcraft.py
++++ b/bindcraft.py
+@@ -125,7 +125,33 @@ while True:
+         if trajectory.aux["log"]["terminate"] == "":
+             # Relax binder to calculate statistics
+             trajectory_relaxed = os.path.join(design_paths["Trajectory/Relaxed"], design_name + ".pdb")
+-            pr_relax(trajectory_pdb, trajectory_relaxed)
++            # [STAGE2-PATCH] one failed trajectory relaxation is recorded, the
++            # unrelaxed PDB is retained, and the run continues with the next
++            # trajectory instead of terminating
++            try:
++                pr_relax(trajectory_pdb, trajectory_relaxed)
++            except Exception as traj_relax_error:
++                record_stage2_relax_failure(os.path.dirname(design_paths["Trajectory"]), {
++                    'time_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
++                    'stage': 'trajectory_relax',
++                    'candidate': design_name,
++                    'model': None,
++                    'unrelaxed_pdb': trajectory_pdb,
++                    'unrelaxed_exists': os.path.exists(trajectory_pdb),
++                    'unrelaxed_bytes': os.path.getsize(trajectory_pdb) if os.path.exists(trajectory_pdb) else None,
++                    'expected_relaxed_pdb': trajectory_relaxed,
++                    'relaxed_exists': os.path.exists(trajectory_relaxed),
++                    'error_type': type(traj_relax_error).__name__,
++                    'error': str(traj_relax_error)[:500],
++                    'retained_unrelaxed': os.path.exists(trajectory_pdb),
++                    'action': 'skipped_trajectory_continue',
++                })
++                print(f"[STAGE2_RELAX_FAILURE] trajectory {design_name} relaxation failed "
++                      f"({type(traj_relax_error).__name__}: {str(traj_relax_error)[:200]}); "
++                      f"unrelaxed PDB retained, skipping to next trajectory")
++                trajectory_n += 1
++                gc.collect()
++                continue
+ 
+             # define binder chain, placeholder in case multi-chain parsing in ColabDesign gets changed
+             binder_chain = "B"
+@@ -250,6 +276,13 @@ while True:
+                             mpnn_design_relaxed = os.path.join(design_paths["MPNN/Relaxed"], f"{mpnn_design_name}_model{model_num+1}.pdb")
+ 
+                             if os.path.exists(mpnn_design_pdb):
++                                # [STAGE2-PATCH] relaxed-only scoring needs the relaxed PDB;
++                                # if relaxation failed for this model it was recorded upstream:
++                                # skip the model (unrelaxed PDB stays on disk) and keep going
++                                if not os.path.exists(mpnn_design_relaxed):
++                                    print(f"[STAGE2_RELAX_FAILURE] relaxed PDB missing for {mpnn_design_name} "
++                                          f"model {model_num+1}; skipping relaxed-only statistics for this model")
++                                    continue
+                                 # Calculate clashes before and after relaxation
+                                 num_clashes_mpnn = calculate_clash_score(mpnn_design_pdb)
+                                 num_clashes_mpnn_relaxed = calculate_clash_score(mpnn_design_relaxed)
+@@ -371,8 +404,38 @@ while True:
+                         # find best model number by pLDDT
+                         plddt_values = {i: mpnn_data[i] for i in range(11, 16) if mpnn_data[i] is not None}
+ 
++                        # [STAGE2-PATCH] only models with an existing relaxed PDB are
++                        # eligible for acceptance/copy; if relaxation failed for every
++                        # model the candidate is recorded and skipped, never crashing
++                        # the run with a missing-file shutil.copy
++                        relaxed_plddt_values = {
++                            i: value for i, value in plddt_values.items()
++                            if os.path.exists(os.path.join(design_paths["MPNN/Relaxed"],
++                                                           f"{mpnn_design_name}_model{i-10}.pdb"))
++                        }
++                        if not relaxed_plddt_values:
++                            record_stage2_relax_failure(os.path.dirname(design_paths["MPNN"]), {
++                                'time_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
++                                'stage': 'mpnn_finalize',
++                                'candidate': mpnn_design_name,
++                                'model': None,
++                                'unrelaxed_pdb': None,
++                                'unrelaxed_exists': None,
++                                'unrelaxed_bytes': None,
++                                'expected_relaxed_pdb': os.path.join(design_paths["MPNN/Relaxed"], mpnn_design_name),
++                                'relaxed_exists': False,
++                                'error_type': 'RelaxedPDBMissing',
++                                'error': 'no relaxed model PDB available after per-model relaxation failures',
++                                'retained_unrelaxed': None,
++                                'action': 'skipped_candidate_continue',
++                            })
++                            print(f"[STAGE2_RELAX_FAILURE] no relaxed model PDB available for {mpnn_design_name}; "
++                                  f"candidate cannot be accepted or copied, continuing to next MPNN candidate")
++                            mpnn_n += 1
++                            continue
++
+                         # Find the key with the highest value
+-                        highest_plddt_key = int(max(plddt_values, key=plddt_values.get))
++                        highest_plddt_key = int(max(relaxed_plddt_values, key=relaxed_plddt_values.get))
+ 
+                         # Output the number part of the key
+                         best_model_number = highest_plddt_key - 10
+diff --git a/functions/colabdesign_utils.py b/functions/colabdesign_utils.py
+index 060d332..fa18988 100644
+--- a/functions/colabdesign_utils.py
++++ b/functions/colabdesign_utils.py
+@@ -2,7 +2,7 @@
+ ############## ColabDesign functions
+ ####################################
+ ### Import dependencies
+-import os, re, shutil, math, pickle
++import os, re, shutil, math, pickle, time
+ import matplotlib.pyplot as plt
+ import numpy as np
+ import jax
+@@ -15,7 +15,7 @@ from colabdesign.af.loss import get_ptm, mask_loss, get_dgram_bins, _get_con_los
+ from colabdesign.shared.utils import copy_dict
+ from .biopython_utils import hotspot_residues, calculate_clash_score, calc_ss_percentage, calculate_percentages
+ from .pyrosetta_utils import pr_relax, align_pdbs
+-from .generic_utils import update_failures
++from .generic_utils import update_failures, record_stage2_relax_failure
+ 
+ # hallucinate a binder
+ def binder_hallucination(design_name, starting_pdb, chain, target_hotspot_residues, length, seed, helicity_value, design_models, advanced_settings, design_paths, failure_csv):
+@@ -300,7 +300,31 @@ def predict_binder_complex(prediction_model, binder_sequence, mpnn_design_name,
+         complex_pdb = os.path.join(design_paths["MPNN"], f"{mpnn_design_name}_model{model_num+1}.pdb")
+         if pass_af2_filters:
+             mpnn_relaxed = os.path.join(design_paths["MPNN/Relaxed"], f"{mpnn_design_name}_model{model_num+1}.pdb")
+-            pr_relax(complex_pdb, mpnn_relaxed)
++            # [STAGE2-PATCH] a failed relaxation for ONE model is recorded per
++            # candidate/model, the unrelaxed PDB is retained, and the loop continues
++            # to the next model / MPNN candidate instead of terminating the whole run
++            try:
++                pr_relax(complex_pdb, mpnn_relaxed)
++            except Exception as relax_error:
++                record_stage2_relax_failure(os.path.dirname(design_paths["MPNN"]), {
++                    'time_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
++                    'stage': 'mpnn_relax',
++                    'candidate': mpnn_design_name,
++                    'model': model_num + 1,
++                    'unrelaxed_pdb': complex_pdb,
++                    'unrelaxed_exists': os.path.exists(complex_pdb),
++                    'unrelaxed_bytes': os.path.getsize(complex_pdb) if os.path.exists(complex_pdb) else None,
++                    'expected_relaxed_pdb': mpnn_relaxed,
++                    'relaxed_exists': os.path.exists(mpnn_relaxed),
++                    'error_type': type(relax_error).__name__,
++                    'error': str(relax_error)[:500],
++                    'retained_unrelaxed': os.path.exists(complex_pdb),
++                    'action': 'skipped_model_continue',
++                })
++                print(f"[STAGE2_RELAX_FAILURE] {mpnn_design_name} model {model_num+1} relaxation failed "
++                      f"({type(relax_error).__name__}: {str(relax_error)[:200]}); "
++                      f"unrelaxed PDB retained, continuing to next model/candidate")
++                continue
+         else:
+             if os.path.exists(complex_pdb):
+                 os.remove(complex_pdb)
+diff --git a/functions/generic_utils.py b/functions/generic_utils.py
+index bd6cbce..e805662 100644
+--- a/functions/generic_utils.py
++++ b/functions/generic_utils.py
+@@ -309,6 +309,15 @@ def clean_pdb(pdb_file):
+     with open(pdb_file, 'w') as f_out:
+         f_out.writelines(relevant_lines)
+ 
++# [STAGE2-PATCH] append a per-model / per-trajectory PyRosetta relaxation failure
++# record as JSONL in the BindCraft design_path root (persistent storage)
++def record_stage2_relax_failure(design_root, record):
++    os.makedirs(design_root, exist_ok=True)
++    log_path = os.path.join(design_root, "relax_failures.jsonl")
++    with open(log_path, 'a') as f:
++        f.write(json.dumps(record, sort_keys=True) + "\n")
++    return log_path
++
+ def zip_and_empty_folder(folder_path, extension):
+     folder_basename = os.path.basename(folder_path)
+     zip_filename = os.path.join(os.path.dirname(folder_path), folder_basename + '.zip')
+diff --git a/functions/pyrosetta_utils.py b/functions/pyrosetta_utils.py
+index cd1f69f..56f545e 100644
+--- a/functions/pyrosetta_utils.py
++++ b/functions/pyrosetta_utils.py
+@@ -204,44 +204,68 @@ def unaligned_rmsd(reference_pdb, align_pdb, reference_chain_id, align_chain_id)
+ 
+     return round(rmsd, 2)
+ 
++# [STAGE2-PATCH] raised when relaxation does not leave a valid, non-empty relaxed PDB
++class RelaxationFailure(Exception):
++    pass
++
+ # Relax designed structure
+ def pr_relax(pdb_file, relaxed_pdb_path):
+     if not os.path.exists(relaxed_pdb_path):
+-        # Generate pose
+-        pose = pr.pose_from_pdb(pdb_file)
+-        start_pose = pose.clone()
+-
+-        ### Generate movemaps
+-        mmf = MoveMap()
+-        mmf.set_chi(True) # enable sidechain movement
+-        mmf.set_bb(True) # enable backbone movement, can be disabled to increase speed by 30% but makes metrics look worse on average
+-        mmf.set_jump(False) # disable whole chain movement
+-
+-        # Run FastRelax
+-        fastrelax = FastRelax()
+-        scorefxn = pr.get_fa_scorefxn()
+-        fastrelax.set_scorefxn(scorefxn)
+-        fastrelax.set_movemap(mmf) # set MoveMap
+-        fastrelax.max_iter(200) # default iterations is 2500
+-        fastrelax.min_type("lbfgs_armijo_nonmonotone")
+-        fastrelax.constrain_relax_to_start_coords(True)
+-        fastrelax.apply(pose)
+-
+-        # Align relaxed structure to original trajectory
+-        align = AlignChainMover()
+-        align.source_chain(0)
+-        align.target_chain(0)
+-        align.pose(start_pose)
+-        align.apply(pose)
+-
+-        # Copy B factors from start_pose to pose
+-        for resid in range(1, pose.total_residue() + 1):
+-            if pose.residue(resid).is_protein():
+-                # Get the B factor of the first heavy atom in the residue
+-                bfactor = start_pose.pdb_info().bfactor(resid, 1)
+-                for atom_id in range(1, pose.residue(resid).natoms() + 1):
+-                    pose.pdb_info().bfactor(resid, atom_id, bfactor)
+-
+-        # output relaxed and aligned PDB
+-        pose.dump_pdb(relaxed_pdb_path)
+-        clean_pdb(relaxed_pdb_path)
++        try:
++            # Generate pose
++            pose = pr.pose_from_pdb(pdb_file)
++            start_pose = pose.clone()
++
++            ### Generate movemaps
++            mmf = MoveMap()
++            mmf.set_chi(True) # enable sidechain movement
++            mmf.set_bb(True) # enable backbone movement, can be disabled to increase speed by 30% but makes metrics look worse on average
++            mmf.set_jump(False) # disable whole chain movement
++
++            # Run FastRelax
++            fastrelax = FastRelax()
++            scorefxn = pr.get_fa_scorefxn()
++            fastrelax.set_scorefxn(scorefxn)
++            fastrelax.set_movemap(mmf) # set MoveMap
++            fastrelax.max_iter(200) # default iterations is 2500
++            fastrelax.min_type("lbfgs_armijo_nonmonotone")
++            fastrelax.constrain_relax_to_start_coords(True)
++            fastrelax.apply(pose)
++
++            # Align relaxed structure to original trajectory
++            align = AlignChainMover()
++            align.source_chain(0)
++            align.target_chain(0)
++            align.pose(start_pose)
++            align.apply(pose)
++
++            # Copy B factors from start_pose to pose
++            for resid in range(1, pose.total_residue() + 1):
++                if pose.residue(resid).is_protein():
++                    # Get the B factor of the first heavy atom in the residue
++                    bfactor = start_pose.pdb_info().bfactor(resid, 1)
++                    for atom_id in range(1, pose.residue(resid).natoms() + 1):
++                        pose.pdb_info().bfactor(resid, atom_id, bfactor)
++
++            # output relaxed and aligned PDB
++            pose.dump_pdb(relaxed_pdb_path)
++
++            # [STAGE2-PATCH] verify relaxed output exists and is non-empty BEFORE clean_pdb()
++            if not (os.path.exists(relaxed_pdb_path) and os.path.getsize(relaxed_pdb_path) > 0):
++                if os.path.exists(relaxed_pdb_path):
++                    os.remove(relaxed_pdb_path)
++                raise RelaxationFailure(f"FastRelax produced no output PDB at {relaxed_pdb_path}")
++
++            clean_pdb(relaxed_pdb_path)
++
++            # [STAGE2-PATCH] verify again AFTER clean_pdb(): never accept an empty/missing relaxed PDB
++            if not (os.path.exists(relaxed_pdb_path) and os.path.getsize(relaxed_pdb_path) > 0):
++                raise RelaxationFailure(f"clean_pdb did not leave a valid non-empty PDB at {relaxed_pdb_path}")
++        except Exception:
++            # [STAGE2-PATCH] never leave a zero-byte relaxed PDB masquerading as a valid model
++            if os.path.exists(relaxed_pdb_path) and os.path.getsize(relaxed_pdb_path) == 0:
++                try:
++                    os.remove(relaxed_pdb_path)
++                except OSError:
++                    pass
++            raise

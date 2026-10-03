@@ -6,8 +6,10 @@ De novo 单链 minibinder（40–100 aa）设计项目：目标是人 EGFR 胞�
 
 ## 当前阶段
 
-阶段 2 云端 smoke test — 可靠性合并已完成（Checkpoint A/B/C），等待用户在 Colab 用
-A–H 薄 notebook 跑/恢复一次真实 smoke（动作 A7）；不启动 EGFR 生产生成。
+阶段 2 云端 smoke test — 可靠性合并已完成（Checkpoint A/B/C；D-019 per-model
+PyRosetta relaxation 容错补丁经 `patches/` + `scripts/apply_bindcraft_patch.py`
+确定性应用），等待用户在 Colab 用 A–H 薄 notebook 跑/恢复一次真实 smoke
+（动作 A7）；不启动 EGFR 生产生成。
 详见 [STATE.md](STATE.md)、[RUNBOOK.md](RUNBOOK.md) §7 与
 [reports/stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)。
 
@@ -20,6 +22,9 @@ A–H 薄 notebook 跑/恢复一次真实 smoke（动作 A7）；不启动 EGFR 
   （持久化、可重启、幂等的 smoke 工作流；科学算法不在 notebook 内）
 - `cloud/stage2_bindcraft_smoke.ipynb` — Colab A–H 薄前端（GPU 门 → Drive →
   pin commit 取工件 → 隔离环境 → preflight → 权重 → 单个恢复 cell → 报告）
+- `patches/` — 唯一授权的 BindCraft pin 上游窄补丁
+  `bindcraft-7713aa0-relax-tolerance.patch`（D-019：per-model relaxation 失败
+  记录/留 PDB/继续/run 不终止），只允许经 `scripts/apply_bindcraft_patch.py` 应用
 - `data/raw|processed|inbox/` — 原始目标文件、处理结果（含冻结 crop PDB
   `6ARU_chainA_domain3_310-481.pdb`）、云端产物回传收件箱（大文件不进 git）
 - `results/`、`reports/`、`submission/`、`tests/`
