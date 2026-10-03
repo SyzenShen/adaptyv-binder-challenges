@@ -85,7 +85,7 @@
   - [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) Cell D：pin checkout SHA 校验后、长环境构建前调用应用器并断言 APPLIED/ALREADY_APPLIED（reset 后幂等）。
   - pristine 测试 oracle：[tests/fixtures/bindcraft_7713aa0_pristine/](tests/fixtures/bindcraft_7713aa0_pristine/)（4 上游文件 + PROVENANCE SHA256；仅测试用，不进 results/ 或 submission/）。
 - 验证：临时 git 树全生命周期（NOT_PATCHED→APPLIED→ALREADY_APPLIED→VERIFIED）、漂移拒绝、半补丁歧义、commit 不匹配、CLI 元数据；坏行 JSONL 解析；启动失败仍终结 FAILED manifest。回归 **124/124**（unittest 与 .venv pytest 双跑）。
-- 提交（两提交 pin 舞，push 后用 ls-remote 核实并回填）：D=____（含补丁/应用器/测试/文档，Cell C PROJECT_PIN 仍指 C `bc81198`）；E=____（仅把 PROJECT_PIN 与 `test_frozen_pins_present` 字面量 bump 到 D）。
+- 提交（两提交 pin 舞，push 后用 ls-remote 核实）：D=`452ac95c810614ad5c7602ef652644a4c63382c6`（含补丁/应用器/测试/文档，Cell C PROJECT_PIN 仍指 C `bc81198`；已 push + ls-remote 核实）；E=本提交（仅把 PROJECT_PIN 与 `test_frozen_pins_present` 字面量 bump 到 D 并回填本文件/报告/RUNBOOK；E 自身 SHA 见 git log/ls-remote 与交接报告，提交无法自引）。
 
 ## 当前 Blockers（真实阻挡）
 

@@ -94,8 +94,8 @@ notebook [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb
    - **A** GPU 门：无 GPU / 配额拒绝立即打印 `GPU_UNAVAILABLE` /
      `COMPUTE_QUOTA_BLOCKED` 并以退出码 2 停止，**绝不回退 CPU**；
    - **B** 挂载 Drive 并设定 `STAGE2_PERSISTENT_ROOT`；
-   - **C** clone/fetch 项目**精确 pin commit** `bc81198`，校验 SHA，记录
-     crop PDB 与脚本 SHA256；
+   - **C** clone/fetch 项目**精确 pin commit** `452ac95`（Checkpoint D，含 D-019
+     容错补丁），校验 SHA，记录 crop PDB 与脚本 SHA256；
    - **D** BindCraft pin `7713aa0` checkout 并校验 SHA 后，先确定性应用唯一
      授权的 D-019 容错补丁（`scripts/apply_bindcraft_patch.py`，元数据写
      `persistent/metadata/bindcraft_patch.json`，状态必须 APPLIED/ALREADY_APPLIED；

@@ -141,15 +141,17 @@ orchestrator 补丁步骤 dry-run/接线、Cell D 补丁锚点与顺序）。
   已 push 并 ls-remote 核实：`f8b9f0d1b75926b5e83a7c924558fab7980ace85`。
 - Checkpoint B：AF2 缓存/下载器/15 文件校验 + matmul 元素级语义修正。
   已 push 并 ls-remote 核实：`bc8119886cc3aaf6f57d9b1f8c548cfcff8dffc9`
-  （此 SHA 同时作为 notebook Cell C 的项目工件 pin）。
+  （曾作为 notebook Cell C 的项目工件 pin；Checkpoint E 起改 pin D）。
 - Checkpoint C：薄 notebook（A–H）、pin-commit 工件获取与 tarball fallback、
   恢复 UX、README/RUNBOOK/HUMAN_ACTIONS/DECISIONS 文档更新。SHA 以 git log /
   `git ls-remote` 与最终交接报告为准（提交无法自引其 SHA）。
 - Checkpoint D（2026-10-03，D-019/BUG 016）：relax-tolerance 补丁 + 应用器 +
   pristine 测试夹具 + JSONL 解析 + run_job 必终结 manifest + orchestrator/Cell D
-  接线 + 文档，回归 124/124。SHA 在提交后回填（两提交 pin 舞：D 含全部代码、
-  notebook Cell C 的 PROJECT_PIN 仍指 C；E 仅把 pin 字面量 bump 到 D 并同步测试）。
+  接线 + 文档，回归 124/124。已 push 并 ls-remote 核实：
+  `452ac95c810614ad5c7602ef652644a4c63382c6`（该提交内 Cell C PROJECT_PIN
+  仍指 C `bc81198`）。
 - Checkpoint E（2026-10-03）：仅 PROJECT_PIN bump（notebook Cell C +
-  `test_frozen_pins_present` 断言）到 Checkpoint D 的 SHA。SHA 提交后回填。
+  `test_frozen_pins_present` 断言）到 Checkpoint D 的 SHA，并回填本文档/
+  STATE/RUNBOOK；E 自身 SHA 见 git log / `git ls-remote`（提交无法自引）。
 
 每个检查点：测试 → commit → push → `git ls-remote` 确认远端 SHA。
