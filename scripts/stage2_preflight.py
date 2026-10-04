@@ -135,10 +135,15 @@ def _skip(skipped, name, reason):
     skipped.append({"check": name, "status": "SKIP", "detail": reason})
 
 
-def main(argv=None):
+def build_parser():
+    """CLI contract (item 4): notebook Cell E passes exactly --out."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", help="write JSON report to this path too")
-    args = ap.parse_args(argv)
+    return ap
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
 
     checks, skipped = [], []
     report = {"passed": False, "checks": checks, "skipped": skipped,

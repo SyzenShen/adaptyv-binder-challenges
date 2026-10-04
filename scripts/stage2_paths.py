@@ -83,6 +83,13 @@ class Paths:
         return self.metadata_dir / "orchestration_state.json"
 
     @property
+    def runtime_config_file(self):
+        """Item 7: resolved runtime paths persisted here so any notebook
+        cell can reconstruct them from disk instead of relying on variables
+        defined in an earlier interactive cell."""
+        return self.metadata_dir / "runtime_config.json"
+
+    @property
     def config_manifest(self):
         return self.configs_dir / "config_manifest.json"
 

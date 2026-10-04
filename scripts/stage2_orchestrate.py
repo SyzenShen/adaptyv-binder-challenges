@@ -36,8 +36,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from stage2_paths import (Paths, JOB_PDL1, JOB_EGFR, BINDPY, BINDCRAFT_DIR,
-                          sha256_file)
+from stage2_paths import (Paths, JOB_PDL1, JOB_EGFR, JOBS, BINDPY,
+                          BINDCRAFT_DIR, sha256_file)
 import stage2_checkpoint as ckpt
 import stage2_configure as configure
 import stage2_run_job as runner
@@ -168,6 +168,34 @@ class Orchestrator:
     def _persist_state(self):
         self.paths.ensure()
         self.paths.write_json(self.paths.state_file, self.state)
+
+    def step_runtime_config(self):
+        """Item 7: persist the resolved runtime paths so every orchestration
+        cell can reconstruct them from disk — no cell may depend on a
+        variable defined in an earlier interactive cell (the historic
+        undefined-name NameError class)."""
+        cfg = {
+            "written_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                         time.gmtime()),
+            "persistent_root": str(self.paths.root),
+            "repo_dir": self.repo_dir,
+            "bindcraft_dir": self.bindcraft_dir,
+            "bindpy": self.bindpy,
+            "dry_run": self.dry_run,
+            "env": {
+                "STAGE2_PERSISTENT_ROOT":
+                    os.environ.get("STAGE2_PERSISTENT_ROOT"),
+                "STAGE2_ALLOW_PRODUCTION":
+                    os.environ.get(configure.PRODUCTION_ENV_FLAG),
+            },
+            "jobs": {tag: str(self.paths.job_dir(tag)) for tag in JOBS},
+            "note": ("Reconstruct paths from this file (or stage2_paths.py); "
+                     "notebook cells must not rely on earlier-cell "
+                     "variables."),
+        }
+        self.paths.write_json(self.paths.runtime_config_file, cfg)
+        self.state["runtime_config"] = str(self.paths.runtime_config_file)
+        return cfg
 
     def step_project(self):
         commit = git_commit(self.repo_dir)
@@ -405,6 +433,7 @@ class Orchestrator:
 
     def run(self):
         self.paths.ensure()
+        self.step_runtime_config()      # before any gating: survives reset
         if not self.step_gpu():
             self.state.update({"status": "GPU_UNAVAILABLE",
                                "compute_blocked": True})
@@ -433,7 +462,9 @@ class Orchestrator:
         return 0
 
 
-def main(argv=None):
+def build_parser():
+    """CLI contract (item 4): notebook Cell G passes exactly these flags;
+    tests/test_stage2.py asserts the contract stays in sync."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-dir", required=True)
     ap.add_argument("--bindcraft-dir", default=BINDCRAFT_DIR)
@@ -443,7 +474,11 @@ def main(argv=None):
                     help="validate everything without launching BindCraft "
                          "or downloading weights")
     ap.add_argument("--colabdesign-commit", default=None)
-    args = ap.parse_args(argv)
+    return ap
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
 
     orch = Orchestrator(repo_dir=args.repo_dir,
                         bindcraft_dir=args.bindcraft_dir,

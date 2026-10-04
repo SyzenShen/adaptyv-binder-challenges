@@ -167,7 +167,9 @@ def apply_or_verify(*, bindcraft_dir, patch_path, verify_only=False):
             0)
 
 
-def main(argv=None):
+def build_parser():
+    """CLI contract (item 4): orchestrator + notebook Cell D pass exactly
+    these flags; tests/test_stage2.py asserts the contract stays in sync."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     default_patch = os.path.abspath(os.path.join(
         os.path.dirname(os.path.abspath(__file__)), os.pardir, PATCH_REL))
@@ -175,7 +177,11 @@ def main(argv=None):
     ap.add_argument("--patch", default=default_patch)
     ap.add_argument("--out", help="write metadata JSON to this path")
     ap.add_argument("--verify-only", action="store_true")
-    args = ap.parse_args(argv)
+    return ap
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
 
     meta, rc = apply_or_verify(bindcraft_dir=args.bindcraft_dir,
                                patch_path=args.patch,

@@ -87,6 +87,15 @@
 - 验证：临时 git 树全生命周期（NOT_PATCHED→APPLIED→ALREADY_APPLIED→VERIFIED）、漂移拒绝、半补丁歧义、commit 不匹配、CLI 元数据；坏行 JSONL 解析；启动失败仍终结 FAILED manifest。回归 **124/124**（unittest 与 .venv pytest 双跑）。
 - 提交（两提交 pin 舞，push 后用 ls-remote 核实）：D=`452ac95c810614ad5c7602ef652644a4c63382c6`（含补丁/应用器/测试/文档，Cell C PROJECT_PIN 仍指 C `bc81198`；已 push + ls-remote 核实）；E=本提交（仅把 PROJECT_PIN 与 `test_frozen_pins_present` 字面量 bump 到 D 并回填本文件/报告/RUNBOOK；E 自身 SHA 见 git log/ls-remote 与交接报告，提交无法自引）。
 
+### Checkpoint F — 契约与状态机硬化（2026-10-04，收口重构 F）
+
+- **下载器链（item 3.4）**：`ensure_af2_weights.py` 由 wget 单路改为可观测链式选择 `aria2c -c → curl -C - → wget -c`（`select_downloader`），缺失工具可 apt 安装一次，全部尝试记录在案，全链失败抛 `DownloaderUnavailable`——不允许静默失败；下载记录新增 `downloader` 字段。`guarantee_wget` 保留为仅 wget 的兼容入口（aria2c 永不被假定存在）。
+- **CLI 契约防回归（item 4）**：`ensure_af2_weights.py` / `stage2_orchestrate.py` / `stage2_preflight.py` / `apply_bindcraft_patch.py` / `analyze_bindcraft_run.py` 全部暴露 `build_parser()`；新增 `TestNotebookCLIContract`——AST 抽取 notebook 与 orchestrator 的全部脚本调用与旗标，逐一断言被对应 argparse 接受（旧 `unrecognized arguments: --out` 事故类永不复发）。
+- **runtime_config 持久化（item 7）**：orchestrator `run()` 在任何门控之前写 `persistent/metadata/runtime_config.json`（持久根/REPO_DIR/BINDCRAFT_DIR/BINDPY/jobs 目录/env 覆盖），GPU 被拒时同样落盘；notebook cell 可从磁盘重建路径，不依赖前序 cell 变量。
+- **PARTIAL 状态（item 9）**：`stage2_run_job.py` 终态分类新增——崩溃（FAILED/OOM/INTERRUPTED/launch_error）但 `final_design_count>0` 时 manifest 记 `status=PARTIAL`、保留 `raw_status` 原始分类；PDL1 环境门语义不变（仍要求 rc0 + relaxed PDB）。
+- **生产门（item 20）**：`stage2_configure.build_advanced` 拒绝 `max_trajectories>3`，除非显式 `STAGE2_ALLOW_PRODUCTION=1`；默认保持小算力 smoke 模式。
+- 验证：新增 18 个回归测试；**142/142**（unittest discover 与 .venv pytest 双跑）。
+
 ## 当前 Blockers（真实阻挡）
 
 1. **AWAITING_CLOUD_SMOKE_RERUN (A7)** — 可靠性合并 A/B/C + D-019 容错补丁已完成（BUG 001–016 全部 FIXED 或 EVIDENCE；124/124 测试）。等用户在 Colab：配 `GITHUB_TOKEN` secret → T4 GPU → 上传薄 notebook → 从 Cell A 顺序跑到 G（Cell D 自动幂等打补丁）；已持久化的 PDL1 run 会被采纳为 LEGACY_CHECKPOINT（或校验通过直接 SKIP），权重走 Drive 缓存。reset/配额中断后从 A 跑到 G 即可恢复。PDL1 环境门（rc0 + relaxed PDB）未重新证实前阶段 3 不得开始。

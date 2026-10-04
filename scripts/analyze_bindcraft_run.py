@@ -145,11 +145,16 @@ def attach_csv_rows(run_dir, names):
     return out
 
 
-def main():
+def build_parser():
+    """CLI contract (item 4); asserted against callers by tests/test_stage2.py."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--out", required=True)
-    args = ap.parse_args()
+    return ap
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
     run_dir = Path(args.run_dir)
 
     folders = {"Trajectory/Relaxed": "relaxed",

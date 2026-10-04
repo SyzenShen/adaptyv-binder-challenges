@@ -6,7 +6,8 @@ Resolution order (no network is touched unless necessary):
   1. bindcraft/params already has the exact official 15-file set  -> use it
   2. persistent Drive cache (extracted files)                    -> restore
   3. persistent Drive cache archive                               -> extract
-  4. observable `wget -c` download into the Drive cache, verify, extract
+  4. observable resumable download into the Drive cache, verify, extract
+     (downloader chain: aria2c -c -> curl -C - -> wget -c; never silent)
 
 Why the cache stores EXTRACTED FILES (not only the tar): after a Colab
 runtime reset the common path is a plain file copy back into
@@ -23,6 +24,7 @@ containing an extra file are both rejected.
 
 Stdlib only.
 """
+import argparse
 import hashlib
 import json
 import os
@@ -134,55 +136,99 @@ def _extract_tar(archive, dst_dir):
     return True, {"ok": True}
 
 
+DOWNLOADER_CHAIN = ("aria2c", "curl", "wget")
+DOWNLOADER_PACKAGES = {"aria2c": "aria2", "curl": "curl", "wget": "wget"}
+
+
+class DownloaderUnavailable(RuntimeError):
+    """Raised when no downloader in the chain can be located or installed
+    (BUG 005: downloader absence must never fail silently)."""
+
+
+def _apt_install(package):
+    for cmd in (["apt-get", "update", "-qq"],
+                ["apt-get", "install", "-y", package]):
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        if p.returncode != 0:
+            return False, f"{' '.join(cmd)} failed: {p.stderr[-300:]}"
+    return True, None
+
+
+def select_downloader(allow_install=True, chain=DOWNLOADER_CHAIN,
+                      which=shutil.which, installer=None, apt_available=None):
+    """Pick the first usable downloader from the chain (aria2c -> curl ->
+    wget). A missing tool may be installed once via apt. Returns
+    (exe, tool, attempts); raises DownloaderUnavailable otherwise — every
+    attempt is recorded, never swallowed."""
+    attempts = []
+    installer = installer or _apt_install
+    if apt_available is None:
+        apt_available = bool(shutil.which("apt-get"))
+    for tool in chain:
+        exe = which(tool)
+        if exe:
+            return exe, tool, attempts
+        attempts.append({"tool": tool, "which": None})
+        if allow_install and apt_available:
+            ok, err = installer(DOWNLOADER_PACKAGES[tool])
+            attempts.append({"tool": tool, "apt_install": ok, "error": err})
+            if ok:
+                exe = which(tool)
+                if exe:
+                    return exe, tool, attempts
+    raise DownloaderUnavailable(
+        f"no usable downloader in chain {chain} "
+        f"(attempts: {json.dumps(attempts)})")
+
+
 def guarantee_wget(allow_install=True):
-    """Return a wget executable path, installing wget once if allowed.
-    Raises if no guaranteed downloader is available (BUG 005)."""
-    wget = shutil.which("wget")
-    if wget:
-        return wget
-    if allow_install and shutil.which("apt-get"):
-        for cmd in (["apt-get", "update", "-qq"],
-                    ["apt-get", "install", "-y", "wget"]):
-            p = subprocess.run(cmd, capture_output=True, text=True)
-            if p.returncode != 0:
-                raise RuntimeError(
-                    f"could not guarantee wget via {' '.join(cmd)}: "
-                    f"{p.stderr[-500:]}")
-        wget = shutil.which("wget")
-    if not wget:
-        raise RuntimeError(
-            "no guaranteed downloader: wget not found (aria2c is never "
-            "assumed present)")
-    return wget
+    """Backward-compatible helper: guarantee wget SPECIFICALLY (never aria2c,
+    which is never assumed present). Raises if wget cannot be provided."""
+    exe, _tool, _attempts = select_downloader(
+        allow_install=allow_install, chain=("wget",))
+    return exe
 
 
-def observed_download(wget_exe, url, archive_path, log_path):
+def downloader_argv(tool, exe, url, part, log_path):
+    """Resume-capable argv per downloader: aria2c -c / curl -C - / wget -c."""
+    if tool == "aria2c":
+        return [exe, "-c", "--log", str(log_path), "--log-level", "notice",
+                "-d", str(part.parent), "-o", part.name, url]
+    if tool == "curl":
+        return [exe, "-C", "-", "-o", str(part), url]
+    return [exe, "-c", "--progress=dot:giga",
+            "-o", str(log_path), "-O", str(part), url]
+
+
+def observed_download(exe, url, archive_path, log_path, tool="wget"):
     """Blocking, observed, resumable download (BUG 004).
 
-    Downloads to `<archive>.part` with `wget -c` (resume survives a reset),
-    then atomically renames on rc==0. Returns a full provenance record.
+    Downloads to `<archive>.part` with the tool's resume flag, then atomically
+    renames on rc==0. Returns a full provenance record including which
+    downloader ran.
     """
     archive_path = Path(archive_path)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     part = archive_path.with_name(archive_path.name + PART_SUFFIX)
+    argv = downloader_argv(tool, exe, url, part, log_path)
     t0 = time.time()
     with open(log_path, "w") as log:
         proc = subprocess.Popen(
-            [wget_exe, "-c", "--progress=dot:giga",
-             "-o", str(log_path), "-O", str(part), url],
-            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-            text=True)
+            argv,
+            stdout=log if tool == "curl" else subprocess.DEVNULL,
+            stderr=subprocess.STDOUT, text=True)
         pid = proc.pid
         rc = proc.wait()
     elapsed = round(time.time() - t0, 1)
-    record = {"pid": pid, "returncode": rc, "elapsed_s": elapsed,
-              "log_path": str(log_path), "url": url,
+    record = {"downloader": tool, "pid": pid, "returncode": rc,
+              "elapsed_s": elapsed, "log_path": str(log_path), "url": url,
               "part_path": str(part)}
     if rc != 0:
         record["bytes_on_disk"] = _safe_size(part)
-        record["error"] = "wget exited non-zero; .part retained for resume"
+        record["error"] = (f"{tool} exited non-zero; .part retained "
+                           "for resume")
         return False, record
     os.replace(part, archive_path)
     size = _safe_size(archive_path)
@@ -247,13 +293,14 @@ def ensure_weights(*, params_dir, cache_dir, log_dir, url=WEIGHT_URL,
 
     # 4. observable download into the persistent cache
     try:
-        wget_exe = guarantee_wget(allow_install=allow_install)
-    except RuntimeError as exc:
+        exe, tool, _attempts = select_downloader(allow_install=allow_install)
+    except DownloaderUnavailable as exc:
         return {"action": "FAIL", "ok": False, "stage": "downloader",
                 "error": str(exc)}
 
     log_path = log_dir / "af2_weights_download.log"
-    okd, drec = observed_download(wget_exe, url, cache_archive, log_path)
+    okd, drec = observed_download(exe, url, cache_archive, log_path,
+                                  tool=tool)
     _write_record(cache_dir, drec)
     if not okd:
         return {"action": "FAIL", "ok": False, "stage": "download",
@@ -276,16 +323,21 @@ def ensure_weights(*, params_dir, cache_dir, log_dir, url=WEIGHT_URL,
             "download": drec}
 
 
-if __name__ == "__main__":
-    import argparse
-    import sys
-    ap = argparse.ArgumentParser()
+def build_parser():
+    """CLI contract (item 4): notebook Cell F passes exactly these flags;
+    tests/test_stage2.py asserts the contract stays in sync."""
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--params-dir", required=True)
     ap.add_argument("--cache-dir", required=True)
     ap.add_argument("--log-dir", required=True)
     ap.add_argument("--out", help="also persist the JSON result here")
     ap.add_argument("--dry-run", action="store_true")
-    args = ap.parse_args()
+    return ap
+
+
+if __name__ == "__main__":
+    import sys
+    args = build_parser().parse_args()
     result = ensure_weights(params_dir=args.params_dir,
                             cache_dir=args.cache_dir,
                             log_dir=args.log_dir, dry_run=args.dry_run)

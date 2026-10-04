@@ -47,6 +47,15 @@ ADVANCED_FOR_TAG = {JOB_PDL1: 1, JOB_EGFR: 3}
 ADVANCED_NAME = {1: "advanced_smoke_max1.json",
                  3: "advanced_smoke_max3.json"}
 
+# Item 20: default must stay small-compute-safe. Any advanced config above
+# this cap is production and needs an explicit environment opt-in.
+PRODUCTION_MAX_TRAJECTORIES = 3
+PRODUCTION_ENV_FLAG = "STAGE2_ALLOW_PRODUCTION"
+
+
+def _production_allowed():
+    return os.environ.get(PRODUCTION_ENV_FLAG) == "1"
+
 
 def target_config(tag, design_path):
     """Build the target settings JSON for a job from the frozen spec."""
@@ -57,7 +66,9 @@ def target_config(tag, design_path):
 
 
 def build_advanced(default_advanced, max_trajectories):
-    """Clone the official advanced default, changing ONLY max_trajectories."""
+    """Clone the official advanced default, changing ONLY max_trajectories.
+    Production-sized caps (larger than the smoke cap) are refused unless
+    STAGE2_ALLOW_PRODUCTION=1 is explicitly set (item 20)."""
     base = dict(default_advanced)
     if base.get("max_trajectories") is not False:
         raise ValueError("official default max_trajectories must be false")
@@ -65,6 +76,13 @@ def build_advanced(default_advanced, max_trajectories):
         raise ValueError("refusing to derive smoke config from a non-default "
                          "advanced settings file")
     base["max_trajectories"] = max_trajectories
+    if (max_trajectories > PRODUCTION_MAX_TRAJECTORIES
+            and not _production_allowed()):
+        raise PermissionError(
+            f"max_trajectories={max_trajectories} exceeds the small-compute "
+            f"smoke cap {PRODUCTION_MAX_TRAJECTORIES}; this repo defaults to "
+            f"smoke mode. To acknowledge a production run set "
+            f"{PRODUCTION_ENV_FLAG}=1 explicitly.")
     return base
 
 

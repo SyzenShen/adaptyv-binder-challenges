@@ -2,8 +2,10 @@
 
 - Refuses to launch unless the target config's design_path is on persistent
   storage (BUG: losing an expensive run to a runtime reset).
-- Writes run_manifest.json (PLANNED -> RUNNING -> terminal) BEFORE/AFTER the
-  process; logs and VRAM samples land on Drive.
+- Writes run_manifest.json (PLANNED -> RUNNING -> terminal: COMPLETE /
+  PARTIAL / FAILED / OOM / INTERRUPTED) BEFORE/AFTER the
+  process; logs and VRAM samples land on Drive. A crashed run that already
+  produced accepted designs is PARTIAL, never silently COMPLETE/FAILED.
 - A valid COMPLETED checkpoint means the expensive job is skipped.
 - Process is fully observed (returncode, wall time, peak VRAM, log); OOM is
   classified from the log; failed/interrupted history is retained.
@@ -190,11 +192,21 @@ def run_job(*, tag, settings_path, advanced_path, paths,
             pass
 
         relaxed = [str(p) for p in ckpt.relaxed_pdbs(design_path)]
-        status = ("FAILED" if launch_error
-                  else _classify(proc_rc, log_text))
+        raw_status = ("FAILED" if launch_error
+                      else _classify(proc_rc, log_text))
+        final_design_count = _count_final_designs(design_path)
+        # Item 9 state machine: a run that crashed AFTER producing accepted
+        # designs is PARTIAL, not a total failure — the accepted outputs are
+        # preserved and reported. A clean rc==0 run stays COMPLETED.
+        status = raw_status
+        if (raw_status in ("FAILED", "OOM", "INTERRUPTED")
+                and isinstance(final_design_count, int)
+                and final_design_count > 0):
+            status = "PARTIAL"
         failure_summary = relax_fail.summarize(design_path)
         manifest.update({
             "status": status,
+            "raw_status": raw_status,
             "end_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "returncode": proc_rc,
             "launch_error": launch_error,
@@ -203,7 +215,7 @@ def run_job(*, tag, settings_path, advanced_path, paths,
             "relaxed_pdb_paths": relaxed,
             "relaxed_pdb_sha256": {p: sha256_file(p) for p in relaxed},
             "random_seed": _seed_from(relaxed[0]) if relaxed else None,
-            "final_design_count": _count_final_designs(design_path),
+            "final_design_count": final_design_count,
             # per-model PyRosetta relaxation failures (D-019 patch record)
             "relax_failure_log_present": failure_summary["log_present"],
             "relax_failure_count": failure_summary["relax_failure_count"],

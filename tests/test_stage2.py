@@ -16,6 +16,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1064,10 +1065,12 @@ class TestAF2WeightProvisioning(unittest.TestCase):
             self.assertEqual(r["action"], "WOULD_DOWNLOAD")
             self.assertFalse(marker.exists())
 
-    def _install_fake_wget(self, binp, fixture_tar, fail=False,
-                           marker=None):
+    def _install_fake_downloader(self, binp, fixture_tar, fail=False,
+                                 marker=None):
+        """Install the same observable fake under every chain name
+        (aria2c/curl/wget) so select_downloader() can pick any of them in
+        tests without touching the network."""
         binp.mkdir(parents=True, exist_ok=True)
-        wget = binp / "wget"
         if fail:
             body = ("#!/usr/bin/env python3\nimport sys, os\n"
                     "open(os.environ['WGET_MARKER'],'w').close()\n"
@@ -1077,12 +1080,22 @@ class TestAF2WeightProvisioning(unittest.TestCase):
                 "#!/usr/bin/env python3\n"
                 "import sys, shutil, os\n"
                 "a = sys.argv[1:]\n"
-                "out = a[a.index('-O') + 1]\n"
+                "if '-d' in a and '-o' in a:\n"          # aria2c style
+                "    out = os.path.join(a[a.index('-d') + 1],\n"
+                "                        a[a.index('-o') + 1])\n"
+                "elif '-O' in a:\n"                       # wget style
+                "    out = a[a.index('-O') + 1]\n"
+                "elif '-o' in a:\n"                       # curl style
+                "    out = a[a.index('-o') + 1]\n"
+                "else:\n"
+                "    sys.exit(9)\n"
                 "shutil.copyfile(os.environ['FIXTURE_TAR'], out)\n"
                 "open(os.environ['WGET_MARKER'], 'w').close()\n"
                 "sys.exit(0)\n")
-        wget.write_text(body)
-        wget.chmod(0o755)
+        for name in ("aria2c", "curl", "wget"):
+            tool = binp / name
+            tool.write_text(body)
+            tool.chmod(0o755)
         os.environ["FIXTURE_TAR"] = str(fixture_tar)
         os.environ["WGET_MARKER"] = str(marker or (binp / "called"))
 
@@ -1098,7 +1111,7 @@ class TestAF2WeightProvisioning(unittest.TestCase):
                     f.unlink()
             binp = td / "fakebin"
             marker = td / "called"
-            self._install_fake_wget(binp, fixture, marker=marker)
+            self._install_fake_downloader(binp, fixture, marker=marker)
             old = os.environ["PATH"]
             os.environ["PATH"] = f"{binp}:{old}"
             try:
@@ -1111,6 +1124,7 @@ class TestAF2WeightProvisioning(unittest.TestCase):
             self.assertTrue(marker.exists())
             self.assertEqual(r["action"], "DOWNLOADED", r)
             d = r["download"]
+            self.assertIn(d["downloader"], ("aria2c", "curl", "wget"))
             self.assertEqual(d["returncode"], 0)
             self.assertIsInstance(d["pid"], int)
             self.assertIn("elapsed_s", d)
@@ -1134,8 +1148,8 @@ class TestAF2WeightProvisioning(unittest.TestCase):
             td = Path(td)
             binp = td / "fakebin"
             marker = td / "called"
-            self._install_fake_wget(binp, td / "nope.tar", fail=True,
-                                    marker=marker)
+            self._install_fake_downloader(binp, td / "nope.tar", fail=True,
+                                          marker=marker)
             old = os.environ["PATH"]
             os.environ["PATH"] = f"{binp}:{old}"
             try:
@@ -1520,6 +1534,332 @@ class TestOrchestratorPatchStep(unittest.TestCase):
                 dry_run=True)
             self.assertTrue(o.step_bindcraft_patch())
             self.assertEqual(o.state["bindcraft_patch"], "SKIPPED_DRY_RUN")
+
+
+class TestDownloaderChain(unittest.TestCase):
+    """Item 3.4: aria2c -> curl -> wget selection, apt attempts recorded,
+    and never a silent failure (BUG 005 family)."""
+
+    def test_prefers_aria2c_then_curl_then_wget(self):
+        exe, tool, attempts = eaw.select_downloader(
+            allow_install=False,
+            which=lambda t: {"aria2c": "/x/aria2c"}.get(t))
+        self.assertEqual(tool, "aria2c")
+        self.assertEqual(attempts, [])
+        exe, tool, attempts = eaw.select_downloader(
+            allow_install=False,
+            which=lambda t: {"curl": "/x/curl", "wget": "/x/wget"}.get(t))
+        self.assertEqual(tool, "curl")
+        self.assertEqual([a["tool"] for a in attempts], ["aria2c"])
+        exe, tool, attempts = eaw.select_downloader(
+            allow_install=False,
+            which=lambda t: {"wget": "/x/wget"}.get(t))
+        self.assertEqual(tool, "wget")
+        self.assertEqual([a["tool"] for a in attempts], ["aria2c", "curl"])
+
+    def test_apt_install_attempted_and_recorded(self):
+        calls = []
+
+        def installer(pkg):
+            calls.append(pkg)
+            return True, None
+
+        which = lambda t: "/x/aria2c" if "aria2" in calls else None
+        exe, tool, attempts = eaw.select_downloader(
+            allow_install=True, which=which, installer=installer,
+            apt_available=True)
+        self.assertEqual(tool, "aria2c")
+        self.assertEqual(calls, ["aria2"])
+        self.assertTrue(any(a.get("apt_install") for a in attempts))
+
+    def test_never_silent_when_nothing_available(self):
+        with self.assertRaises(eaw.DownloaderUnavailable) as cm:
+            eaw.select_downloader(
+                allow_install=False, which=lambda t: None,
+                installer=lambda p: (True, None))
+        self.assertIn("aria2c", str(cm.exception))
+
+    def test_resume_flag_per_tool(self):
+        from pathlib import PurePath
+        part, log = PurePath("/p/a.tar.part"), PurePath("/p/dl.log")
+        self.assertIn("-c", eaw.downloader_argv("aria2c", "aria2c", "u",
+                                               part, log))
+        argv = eaw.downloader_argv("curl", "curl", "u", part, log)
+        self.assertEqual(argv[argv.index("-C") + 1], "-")
+        self.assertIn("-c", eaw.downloader_argv("wget", "wget", "u",
+                                               part, log))
+
+    def test_guarantee_wget_never_returns_aria2c(self):
+        exe, tool, _ = eaw.select_downloader(
+            allow_install=False, chain=("wget",),
+            which=lambda t: {"wget": "/x/wget"}.get(t))
+        self.assertEqual(tool, "wget")
+        self.assertEqual(exe, "/x/wget")
+
+
+class TestPartialStatusManifest(unittest.TestCase):
+    """Item 9: crash AFTER accepted designs existed -> PARTIAL, with the
+    raw classification retained. PDL1 gate semantics are unchanged."""
+
+    def _prep(self, td):
+        bd = make_fake_bindcraft(td)
+        paths = sp.Paths(root=Path(td) / "drive")
+        paths.ensure()
+        man = configure.write_all(paths, bindcraft_dir=str(bd))
+        tag = sp.JOB_PDL1
+        sp_path = bd / "settings_target" / man[tag]["target_config_name"]
+        ap_path = bd / man[tag]["advanced_config_name"]
+        design_path = json.loads(sp_path.read_text())["design_path"]
+        return bd, paths, tag, sp_path, ap_path, Path(design_path)
+
+    def test_launch_failure_after_accepts_is_partial(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, tag, sp_path, ap_path, dp = self._prep(td)
+            acc = dp / "Accepted"
+            acc.mkdir(parents=True)
+            (acc / "PDL1_smoke_l65_s1.pdb").write_text("ATOM accepted\nEND\n")
+            out, action = runner.run_job(
+                tag=tag, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd),
+                bindpy=str(Path(td) / "no-such-bindpython"), dry_run=False)
+            self.assertEqual(action, "RAN")
+            self.assertEqual(out["status"], "PARTIAL")
+            self.assertEqual(out["raw_status"], "FAILED")
+            self.assertEqual(out["final_design_count"], 1)
+            on_disk = ckpt.load_manifest(paths, tag)
+            self.assertEqual(on_disk["status"], "PARTIAL")
+            self.assertEqual(on_disk["raw_status"], "FAILED")
+
+    def test_oom_after_accepts_is_partial(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, tag, sp_path, ap_path, dp = self._prep(td)
+            acc = dp / "Accepted"
+            acc.mkdir(parents=True)
+            (acc / "PDL1_smoke_l65_s1.pdb").write_text("ATOM accepted\nEND\n")
+            bindpy = Path(td) / "fakebindpy"
+            bindpy.write_text("#!/bin/sh\nprintf 'CUDA out of memory.\\n'\n"
+                              "exit 1\n")
+            bindpy.chmod(0o755)
+            out, action = runner.run_job(
+                tag=tag, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd), bindpy=str(bindpy),
+                dry_run=False)
+            self.assertEqual(action, "RAN")
+            self.assertEqual(out["status"], "PARTIAL")
+            self.assertEqual(out["raw_status"], "OOM")
+            self.assertEqual(out["returncode"], 1)
+
+    def test_failure_without_accepts_stays_failed(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, tag, sp_path, ap_path, dp = self._prep(td)
+            out, _ = runner.run_job(
+                tag=tag, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd),
+                bindpy=str(Path(td) / "no-such-bindpython"), dry_run=False)
+            self.assertEqual(out["status"], "FAILED")
+            self.assertEqual(out["raw_status"], "FAILED")
+            self.assertIsNone(out["final_design_count"])
+
+    def test_zero_accepted_failure_is_not_partial(self):
+        with tempfile.TemporaryDirectory() as td:
+            bd, paths, tag, sp_path, ap_path, dp = self._prep(td)
+            acc = dp / "Accepted"
+            acc.mkdir(parents=True)   # exists but EMPTY -> count 0
+            out, _ = runner.run_job(
+                tag=tag, settings_path=sp_path, advanced_path=ap_path,
+                paths=paths, bindcraft_dir=str(bd),
+                bindpy=str(Path(td) / "no-such-bindpython"), dry_run=False)
+            self.assertEqual(out["status"], "FAILED")
+            self.assertEqual(out["final_design_count"], 0)
+
+
+class TestProductionGate(unittest.TestCase):
+    """Item 20: small-compute-safe default; production caps need an explicit
+    STAGE2_ALLOW_PRODUCTION=1 opt-in."""
+
+    def test_smoke_cap_allowed_without_opt_in(self):
+        base = json.loads(json.dumps(OFFICIAL_ADV))
+        cfg = configure.build_advanced(base, 3)
+        self.assertEqual(cfg["max_trajectories"], 3)
+
+    def test_above_cap_refused_without_opt_in(self):
+        base = json.loads(json.dumps(OFFICIAL_ADV))
+        with self.assertRaises(PermissionError):
+            configure.build_advanced(base, 10)
+
+    def test_above_cap_allowed_with_explicit_opt_in(self):
+        base = json.loads(json.dumps(OFFICIAL_ADV))
+        old = os.environ.get(configure.PRODUCTION_ENV_FLAG)
+        os.environ[configure.PRODUCTION_ENV_FLAG] = "1"
+        try:
+            cfg = configure.build_advanced(base, 10)
+        finally:
+            if old is None:
+                os.environ.pop(configure.PRODUCTION_ENV_FLAG, None)
+            else:
+                os.environ[configure.PRODUCTION_ENV_FLAG] = old
+        self.assertEqual(cfg["max_trajectories"], 10)
+
+    def test_cap_constant(self):
+        self.assertEqual(configure.PRODUCTION_MAX_TRAJECTORIES, 3)
+        self.assertEqual(configure.PRODUCTION_ENV_FLAG,
+                         "STAGE2_ALLOW_PRODUCTION")
+
+
+class TestRuntimeConfigPersisted(unittest.TestCase):
+    """Item 7: resolved runtime paths survive on disk; no hidden session
+    state (the old RUNROOT NameError class)."""
+
+    def test_path_property(self):
+        with tempfile.TemporaryDirectory() as td:
+            paths = sp.Paths(root=td)
+            self.assertEqual(paths.runtime_config_file,
+                             Path(td) / "persistent" / "metadata"
+                             / "runtime_config.json")
+
+    def test_written_before_gpu_gate_even_when_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            o = orchestrate.Orchestrator(
+                repo_dir=str(ROOT),
+                bindcraft_dir=str(Path(td) / "bindcraft"),
+                bindpy=str(Path(td) / "py"),
+                root=str(Path(td) / "drive"), dry_run=True)
+            with unittest.mock.patch.object(orchestrate.runner,
+                                            "query_nvidia_smi",
+                                            return_value=None):
+                rc = o.run()
+            self.assertEqual(rc, 2)   # controlled GPU blocked, unchanged
+            cfg = json.loads(
+                o.paths.runtime_config_file.read_text())
+            self.assertEqual(cfg["persistent_root"], str(Path(td) / "drive"))
+            self.assertEqual(cfg["repo_dir"], str(ROOT))
+            self.assertEqual(cfg["bindpy"], str(Path(td) / "py"))
+            self.assertIn(sp.JOB_PDL1, cfg["jobs"])
+            self.assertIn(sp.JOB_EGFR, cfg["jobs"])
+            self.assertIn("note", cfg)
+            self.assertEqual(o.state["status"], "GPU_UNAVAILABLE")
+
+
+class TestNotebookCLIContract(unittest.TestCase):
+    """Item 4: every CLI flag the notebook (and the orchestrator) passes to
+    a script must be accepted by that script's argparse contract, or CI
+    fails — the old 'unrecognized arguments: --out' drift can never return."""
+
+    @staticmethod
+    def _literal_text(node):
+        """Best-effort string content of an AST element (Constants inside
+        f-strings count, so f'{REPO_DIR}/scripts/x.py' is recognised)."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.JoinedStr):
+            return "".join(v.value for v in node.values
+                           if isinstance(v, ast.Constant)
+                           and isinstance(v.value, str))
+        if isinstance(node, (ast.Call, ast.BinOp)):
+            return "/".join(
+                t for t in (TestNotebookCLIContract._literal_text(child)
+                            for child in ast.walk(node)
+                            if isinstance(child, ast.Constant)
+                            and isinstance(child.value, str)
+                            and child.value not in ("/",)) if t)
+        return ""
+
+    @classmethod
+    def extract_invocations(cls, source):
+        """{script_filename: [flags...]} from every list literal that looks
+        like one CLI invocation (exactly one *.py element inside)."""
+        invocations = {}
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.List):
+                continue
+            scripts, flags = [], []
+            for el in node.elts:
+                text = cls._literal_text(el)
+                if text.endswith(".py") and "scripts/" in text:
+                    scripts.append(text.split("/")[-1])
+                elif isinstance(el, ast.Constant) and el.value == "--":
+                    continue
+                elif isinstance(el, ast.Constant) \
+                        and isinstance(el.value, str) \
+                        and el.value.startswith("--"):
+                    flags.append(el.value)
+            if len(scripts) == 1:
+                invocations.setdefault(scripts[0], []).extend(flags)
+        return invocations
+
+    @classmethod
+    def parsers(cls):
+        def load(stem):
+            spec = importlib.util.spec_from_file_location(
+                f"{stem}_for_contract", str(SCRIPTS / f"{stem}.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+        preflight = load("stage2_preflight")
+        analyzer = load("analyze_bindcraft_run")
+        return {
+            "ensure_af2_weights.py": eaw.build_parser(),
+            "stage2_orchestrate.py": orchestrate.build_parser(),
+            "apply_bindcraft_patch.py": abp.build_parser(),
+            "stage2_preflight.py": preflight.build_parser(),
+            "bindcraft_preflight.py": preflight.build_parser(),
+            "analyze_bindcraft_run.py": analyzer.build_parser(),
+        }
+
+    def test_notebook_flags_are_accepted(self):
+        nb = json.loads((CLOUD / "stage2_bindcraft_smoke.ipynb").read_text())
+        invocations = {}
+        for cell in nb["cells"]:
+            if cell["cell_type"] == "code":
+                for script, flags in self.extract_invocations(
+                        "".join(cell["source"])).items():
+                    invocations.setdefault(script, []).extend(flags)
+        self.assertIn("ensure_af2_weights.py", invocations,
+                      "contract sanity: notebook must invoke the weights "
+                      "script")
+        parsers = self.parsers()
+        for script, flags in invocations.items():
+            self.assertIn(script, parsers,
+                          f"notebook invokes {script} but no contract "
+                          f"parser is registered")
+            actions = parsers[script]._option_string_actions
+            for flag in flags:
+                self.assertIn(flag, actions,
+                              f"{script} does not accept {flag} "
+                              f"(CLI drift regression)")
+
+    def test_orchestrator_subcommand_flags_are_accepted(self):
+        src = (SCRIPTS / "stage2_orchestrate.py").read_text()
+        parsers = self.parsers()
+        for script, flags in self.extract_invocations(src).items():
+            self.assertIn(script, parsers,
+                          f"orchestrator invokes {script} but no contract "
+                          f"parser is registered")
+            actions = parsers[script]._option_string_actions
+            for flag in flags:
+                self.assertIn(flag, actions,
+                              f"{script} does not accept {flag} "
+                              f"(orchestrator CLI drift)")
+
+    def test_flag_with_dummy_values_actually_parses(self):
+        parsers = self.parsers()
+        for script, parser in parsers.items():
+            argv = []
+            for action in list(parser._actions)[1:]:
+                if not action.option_strings:
+                    continue
+                argv.append(action.option_strings[0])
+                if action.nargs == 0:
+                    continue          # store_true / count / help style
+                if isinstance(action.nargs, int):
+                    argv.extend(["dummy"] * action.nargs)
+                else:
+                    argv.append("dummy")
+            try:
+                parser.parse_args(argv)
+            except SystemExit as exc:   # pragma: no cover - regression guard
+                self.fail(f"{script} parser rejected its own contract "
+                          f"args: {exc}")
 
 
 if __name__ == "__main__":
