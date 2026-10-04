@@ -2326,5 +2326,38 @@ class TestNotebookCLIContract(unittest.TestCase):
                           f"args: {exc}")
 
 
+class TestReadmeDocs(unittest.TestCase):
+    """Directive item 31.J: lightweight README structure checks."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = (ROOT / "README.md").read_text()
+        cls.low = cls.text.lower()
+
+    def test_english_section_exists(self):
+        self.assertIn("# egfr", self.low)
+        self.assertIn("## 10-minute orientation", self.low)
+
+    def test_chinese_section_exists(self):
+        # full translation must live in README.md itself, not a link/stub
+        self.assertIn("中文版完整攻略", self.text)
+        self.assertNotIn("coming soon", self.low)
+
+    def test_quick_start_exists(self):
+        self.assertIn("quick start", self.low)
+
+    def test_troubleshooting_exists(self):
+        self.assertIn("troubleshooting", self.low)
+        self.assertIn("docs/TROUBLESHOOTING.md", self.text)
+
+    def test_resume_exists(self):
+        self.assertIn("## 38. how to resume after runtime reset", self.low)
+
+    def test_accepted_not_experimentally_validated(self):
+        self.assertIn("accepted", self.low)
+        self.assertIn("does not mean experimentally validated", self.low)
+        self.assertIn("experimentally_validated", self.text)
+
+
 if __name__ == "__main__":
     unittest.main()

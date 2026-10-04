@@ -1,6 +1,6 @@
 # STATE — 项目状态
 
-最后更新：2026-10-03 ｜ 阶段：**2 云端 smoke test — 可靠性合并 Checkpoint A/B/C 完成并 push 核实（A=`f8b9f0d`，B=`bc81198`；C 见 git log/ls-remote）；2026-10-03 按用户六条指令完成 D-019 per-model PyRosetta relaxation 容错（BUG 016，唯一授权上游窄补丁，BindCraft pin `7713aa0` 不变；补丁+应用器+pristine 夹具+JSONL 记录+manifest 必终结；124/124 双套件通过；Checkpoint D/E 提交/push/ls-remote 见本文件末尾回填）；薄 A–H notebook + 单一恢复 cell G，工件按 pin commit 获取；BUG 001-016 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；等待用户 A7 在 Colab 跑/恢复一次真实 smoke；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 跑薄 notebook（reset 后从 A 跑到 G 即恢复；Cell D 补丁步骤幂等）、A6 Slack 截图、A3 资格确认
+最后更新：2026-10-04 ｜ 阶段：**2 云端 smoke test — 收口重构 Checkpoint F/G/H 完成（F=`7f93ab4`、G=`f1134a3` 已 push 核实；H=README 双语攻略 + docs/TROUBLESHOOTING + docs/REPRODUCIBILITY + patches/PATCHES.md + notebook 逐 cell 注解 UX + Cell H 表位高亮走映射修复，168/168 双套件）；此前：可靠性合并 A/B/C 完成并 push 核实（A=`f8b9f0d`，B=`bc81198`）；2026-10-03 按用户六条指令完成 D-019 per-model PyRosetta relaxation 容错（BUG 016，唯一授权上游窄补丁，BindCraft pin `7713aa0` 不变；补丁+应用器+pristine 夹具+JSONL 记录+manifest 必终结）；薄 A–H notebook + 单一恢复 cell G，工件按 pin commit 获取；BUG 001-017 台账见 [stage2_reliability_consolidation.md](reports/stage2_reliability_consolidation.md)；等待用户 A7 在 Colab 跑/恢复一次真实 smoke；不启动 EGFR 生产生成**；A+ 已关闭（主选 B 经用户批准）；已有云端硬件实测：**Tesla T4 / 15360 MiB / CUDA 12.8（用户 2026-10-01 回传）**，PDL1 成功 run 已持久化到用户 Drive（`PDL1_smoke_l65_s909721.pdb`，rc 0、零最终接受），EGFR 0 轨迹，时长/吞吐/成功率仍为 null。阻塞项 A7 Colab 跑薄 notebook（reset 后从 A 跑到 G 即恢复；Cell D 补丁步骤幂等）、A6 Slack 截图、A3 资格确认
 
 ## 总体里程碑
 
@@ -9,7 +9,7 @@
 | 0 规则/环境/仓库/最小项目 | ✅ 完成（push 已核实） | 远端 main @ 24d362c |
 | 1 目标/映射/表位候选 | ✅ 完成（测试 22/22） | 科学确认点 A 已被 A+ 取代 |
 | 1.5 目标+assay 感知表位审计 | ✅ 完成（测试 36/36） | A+ 已由用户 2026-10-01 批准（D-013） |
-| 2 云端 smoke test | 🟡 可靠性合并完成（A/B/C push 核实）+ D-019 容错补丁（Checkpoint D/E），待 A7 云端复测 | 实测 T4 15GB；PDL1 成功 run 已持久化（零最终接受）；薄 A–H notebook + 检查点幂等恢复就绪；124/124 测试 |
+| 2 云端 smoke test | 🟡 收口重构 F/G/H 完成（契约硬化 + 编号映射/全 ECD 审计 + README/docs/notebook UX），待 A7 云端复测 | 实测 T4 15GB；PDL1 成功 run 已持久化（零最终接受）；薄 A–H notebook + 检查点幂等恢复就绪；168/168 测试 |
 | 3 小批次生成与筛选 | ⏳ 未开始 | 依赖 smoke 报告经用户复核 |
 | 4 双物种复核 / 完整 ECD | ⏳ 未开始 | 另依赖 A2 |
 | 5 pH 假设与有限重设计 | ⏳ 未开始 | |
@@ -102,6 +102,14 @@
 - **几何分析器强制走映射**：[analyze_bindcraft_run.py](scripts/analyze_bindcraft_run.py) 重写——缺失/损坏 map 拒绝运行（SystemExit FAIL LOUDLY）；逐 hotspot 位点距离+present/contacted（非 occupancy-only）；H433 仅几何事实（明示非 pH 证据）；edge window 可配置（默认 5，不再硬编码 3）；binder N/C 端窗口统计 + `C_TERMINAL_ASSAY_RISK`（只记录不拒）；lifecycle 五层可算（GENERATED..CROP_EDGE_QC）、五层恒 null；整链不可映射记 `numbering_error` 并使 CLI 退出码 1。
 - **全 ECD 上下文审计（item 15）**：新 [audit_full_ecd_context.py](scripts/audit_full_ecd_context.py)——complex(chain A local+chain B) 经映射+CSV 换算 Kabsch CA 对齐到 [6ARU.cif](data/raw/6ARU.cif)（stdlib CIF tokenizer + numpy 带 guard，缺失即 FAIL LOUDLY）；输出 RMSD/覆盖、Domain I/II/III/IV 逐域最小距离+接触+clash、glycan(NAG 等)接触、`CONTACTS_OUTSIDE_CROP`/`CROP_EDGE_RISK`/`ALIGNMENT_POOR` 等旗标；只报几何事实不下结论；可选输出全 ECD CA+变换后 binder 可视化 PDB。
 - 验证：新增 20 个回归测试（映射锚点/连续性/生成器冲突 FAIL LOUDLY、分析器 local 帧几何/逐 hotspot/lifecycle/映射强制/BUG 017 演示、Kabsch 已知旋转恢复/拒绝镜像/numpy guard、真实 6ARU.cif 端到端 RMSD<0.01+Domain IV 接触）；**162/162**（unittest discover 与 .venv pytest 双跑）。
+
+### Checkpoint H — 新手可复刻 UX 与文档收口（2026-10-04，收口重构 H）
+
+- **README 全量重写（item 17/21-28/32-33）**：英文主体 + 底部完整中文攻略（同一文件，非链接）；10-minute orientation；ASCII 总流程图逐级标注本仓库覆盖范围与未做层（人鼠/pH 检查、短名单、湿实验 NOT YET/OUT OF SCOPE）；0–48 全小节（can/cannot tell you、12 行"Problems we actually hit"真实事故表、mpnn4 `EGFR_D3_Bcons_l80_s313440_mpnn4` "why Accepted is not the end" on-hold 教学案例）；主要步骤按 11 节固定模板；语气为踩坑攻略、零前置知识内联术语；段落 ≤6 行。新增 `TestReadmeDocs` 轻量结构检查（英/中/Quick Start/Troubleshooting/Resume/Accepted-not-validated 6 项）。
+- **docs/ 三件套**：[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)——13 个真实故障 × Symptom/Cause/Confirm it/Fix/Do not do this/Will I lose my results?（覆盖 BUG 001–017 全部事故）；[REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)——pinned inputs 表（BindCraft/ColabDesign SHA、PROJECT_PIN 机制、py3.10/JAX 0.6.0 栈、PyRosetta quarterly 观察记录不 pin、AF2 15 npz、补丁、manifest SHA256、映射工件）、每 run 持久化文件清单、复现步骤、LEGACY_CHECKPOINT 规则、Known gaps；[PATCHES.md](../patches/PATCHES.md)——D-019 补丁行为/幂等/scope guard 说明。
+- **notebook UX（item 19）**：[stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb) 每个代码 cell 前插入 markdown 说明 cell（What this cell does/Expected output/If it fails/Should I rerun it? 四段），18 cells = 10 md + 8 code（结构不变，`TestThinNotebook` 断言仍成立）；**Cell H 修复 BUG 017 残留**——表位高亮不再用生物学 390–431 直接查 local 1–172 的 PDB，改经 `target_residue_map.json` 换算 `epitope_local`，映射不可用时降级为跳过高亮（不中断目检）。
+- **资源卫生（item 34）**：`git ls-files` 审计确认无 secret/权重/大文件被追踪（无需 STOP）；[.gitignore](.gitignore) 增补 tar/Miniforge/persistent/content/PyRosetta 安装包/凭据类模式。
+- 验证：新增 6 个 README 测试；**168/168**（unittest discover 与 .venv pytest 双跑）。
 
 ## 当前 Blockers（真实阻挡）
 

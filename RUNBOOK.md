@@ -109,7 +109,9 @@ notebook [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb
    - **G** **唯一昂贵 cell，"RUN OR RESUME STAGE 2 SMOKE"**：一个 orchestrator
      子命令；PDL1 合法检查点自动 skip（约 30 分钟不重跑）；PDL1 环境门
      （rc==0 且 ≥1 relaxed PDB；零 MPNN 接受不算环境失败）不过则阻断 EGFR；
-   - **H** 读持久 JSON/MD 报告并 py3Dmol 目检。
+   - **H** 读持久 JSON/MD 报告并 py3Dmol 目检（表位高亮经
+     `data/processed/target_residue_map.json` 把生物学 390–403+421–431 换算为
+     输出 PDB 的 local 编号；映射不可用时跳过高亮继续目检）。
 4. 完成后回传 `persistent/reports/`、`persistent/metadata/`、`persistent/logs/`
    与 relaxed PDB（或分享整个 Drive 文件夹）。
 
@@ -186,7 +188,7 @@ BindCraft pin 树在 Cell D 被确定性打上唯一授权补丁
 
 ```bash
 .venv/bin/python scripts/make_domain3_pdb.py      # 生成裁剪 PDB + manifest（幂等）
-python3 -m unittest discover -s tests             # 124/124 期望
+python3 -m unittest discover -s tests             # 168/168 期望
 ```
 
 本地分析回传产物（无 GPU 也能跑，纯标准库）：
@@ -196,3 +198,15 @@ python3 scripts/analyze_bindcraft_run.py \
   --run-dir data/inbox/egfr_d3_B_conservative \
   --out results/stage2/egfr_d3_B_conservative_geometry.json
 ```
+
+### 7.8 文档入口（2026-10-04 收口重构 H 起）
+
+- 新手第一次跑：先读 [README.md](README.md)（英文主体 + 底部完整中文攻略，
+  含 10-minute orientation、Quick start、12 行真实事故表、resume/配额流程）。
+- 按症状排障：[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)（13 个真实
+  故障，含确认命令与"会不会丢结果"）。
+- 复现/版本溯源：[docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)（全部
+  pin、每 run 记录清单、复现步骤、Known gaps）。
+- D-019 补丁行为与幂等性：[patches/PATCHES.md](patches/PATCHES.md)。
+- notebook 每个代码 cell 前有 markdown 说明（What this cell does / Expected
+  output / If it fails / Should I rerun it?），运行顺序仍以本节为准。

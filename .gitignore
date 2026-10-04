@@ -57,3 +57,17 @@ results/**/raw_predictions/
 
 # --- Colab / Drive local leftovers ---
 *.ipynb_checkpoints
+
+# --- Item 34 audit: large downloads, installers, credentials ---
+*.tar
+*.tar.gz
+*.tar.bz2
+Miniforge*.sh
+Miniforge3/
+miniforge3/
+persistent/
+/content/
+PyRosetta*.deb
+PyRosetta*.whl
+*credentials*.json
+gcloud-credentials*.json

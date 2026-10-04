@@ -1,6 +1,6 @@
 # HUMAN_ACTIONS — 需要本人完成的最短动作清单
 
-更新：2026-10-02（A7 已随可靠性合并改为"跑一个恢复 cell"）。每条都给“为什么、怎么做、完成标志”。未完成前我不会假设其已完成。
+更新：2026-10-04（A7 已随收口重构 H 更新：notebook 每 cell 有 markdown 说明，README 双语攻略为新手入口）。每条都给“为什么、怎么做、完成标志”。未完成前我不会假设其已完成。
 
 ## A1 — GitHub 认证 ~~（解除 PUSH_BLOCKED）~~ ✅ 已由用户提供仓库解除（2026-09-30）
 
@@ -59,13 +59,16 @@ LEGACY_CHECKPOINT 并跳过约 30 分钟的重跑。
 2. Runtime → Change runtime type → **T4 GPU** → 上传新版
    [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb)。
 
-**运行（只需记住"从上到下，一个恢复 cell"）**：
+**运行（只需记住"从上到下，一个恢复 cell"；新手先读 [README.md](README.md) 的
+10-minute orientation 与 Quick start）**：
 3. 顺序运行 **Cell A→H**，不要改任何数字。A=GPU 门（无 GPU/配额拒绝会打印
    `GPU_UNAVAILABLE`/`COMPUTE_QUOTA_BLOCKED` 并停止，不会跑 CPU）；B=Drive；
-   C=精确 pin commit `bc81198` 取项目工件；D=BindCraft `7713aa0` + 隔离
-   py3.10/jax0.6.0 环境（首次 10–25 分钟，幂等）；E=preflight；F=权重
-   （本地→Drive 缓存→可观测续传下载，精确 15 npz）；**G=唯一昂贵 cell**，
-   PDL1 完成即跳过、失败即阻断 EGFR；H=报告+三维目检。
+   C=按 notebook 内 `PROJECT_PIN` 精确 commit 取项目工件（以 Cell C 打印的
+   PROJECT PIN 为准）；D=BindCraft `7713aa0` + 隔离
+   py3.10/jax0.6.0 环境（首次 10–25 分钟，幂等）+ 幂等应用 D-019 补丁；
+   E=preflight；F=权重（本地→Drive 缓存→可观测续传下载，精确 15 npz）；
+   **G=唯一昂贵 cell**，PDL1 完成即跳过、失败即阻断 EGFR；H=报告+三维目检
+   （表位高亮已自动经残基映射换算到输出 PDB 的 local 编号）。
 4. 若中途断连/reset/配额被拒：重新连上 GPU 后**从 A 再跑到 G 即可**——权重走 Drive
    缓存，PDL1 检查点自动 skip，不会静默重跑或覆盖完成态。详见
    [RUNBOOK.md](RUNBOOK.md) §7.3/§7.4。
