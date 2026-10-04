@@ -6,6 +6,7 @@ run analyzer.
 Stdlib only (no third-party dependency at test time).
 """
 import ast
+import csv
 import importlib.util
 import json
 import os
@@ -469,39 +470,488 @@ class TestPreflightDeviceSemantics(unittest.TestCase):
         self.assertIn("not resident", detail)
 
 
+def pdb_line(n, name, resn, chain, res, x, y, z, elem):
+    """Strict PDB v3 fixed columns: 13-16 name, 17 altloc, 18-20 resname,
+    22 chain, 23-26 resseq, 31-38/39-46/47-54 xyz, 77-78 element."""
+    return (f"ATOM  {n:5d} {name:<4s} {resn:>3s} {chain}{res:4d}    "
+            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00          {elem:>2s}\n")
+
+
+def synthetic_map(td, lo_bio=310, n=172, name="target_residue_map.json"):
+    """Minimal local->biological map artifact with the real crop frame
+    (local 1 -> 310, so 81/84/141/124 -> 390/393/450/433)."""
+    residues = [{"input_pdb_residue": lo_bio + i, "biological_number":
+                 lo_bio + i, "output_local_index": i + 1,
+                 "residue_name": "ALA"} for i in range(n)]
+    m = {"target_name": "synthetic", "source_chain": "A",
+         "biological_span": [lo_bio, lo_bio + n - 1],
+         "numbering_note": "synthetic test map", "residues": residues}
+    p = Path(td) / name
+    p.write_text(json.dumps(m))
+    return p
+
+
 class TestAnalyzerOnSyntheticTemp(unittest.TestCase):
-    def test_geometry_flags(self):
+    """Item 12 regression: BindCraft output target chain is LOCAL-numbered;
+    every biological statement must come from the mapping artifact."""
+
+    def build_run(self, td, binder_extra=(), target_extra=(), map_path=None,
+                  name="EGFR_D3_Bcons_l80_s42.pdb",
+                  folder="Trajectory/Relaxed"):
+        """Target locals 81(=bio390 GLN) at x=0, 84(=bio393 ASP) at x=3,
+        141(=bio450) at x=30; binder res1 at x=0.7, res2 at x=3.0."""
+        d = Path(td) / folder
+        d.mkdir(parents=True, exist_ok=True)
+        atoms, n = [], 0
+        targets = [(81, "GLN", 0.0), (84, "ASP", 3.0), (141, "ALA", 30.0)]
+        targets += list(target_extra)
+        for res, resn, x in targets:
+            for an, elem, dx in [("N", "N", 0), ("CA", "C", 1.4),
+                                 ("C", "C", 2.8)]:
+                n += 1
+                atoms.append(pdb_line(n, an, resn, "A", res, x + dx, 0, 0,
+                                      elem))
+        binder = [(1, 0.7), (2, 3.0)] + list(binder_extra)
+        for res, x in binder:
+            for an, elem, dx, dy in [("N", "N", -1.4, 0), ("CA", "C", 0, 0),
+                                     ("CB", "C", 0, 1.5), ("C", "C", 1.4, 0)]:
+                n += 1
+                atoms.append(pdb_line(n, an, "ALA", "B", res, x + dx, dy, 0,
+                                      elem))
+        (d / name).write_text("".join(atoms) + "END\n")
+        return d / name
+
+    def run_analyzer(self, td, map_path, expect_rc=0):
+        out = Path(td) / "out.json"
+        p = subprocess.run(
+            [sys.executable, str(SCRIPTS / "analyze_bindcraft_run.py"),
+             "--run-dir", str(td), "--out", str(out),
+             "--residue-map", str(map_path)],
+            capture_output=True, text=True)
+        data = json.loads(out.read_text()) if out.exists() else None
+        return p, data
+
+    def test_geometry_flags_in_local_frame(self):
         with tempfile.TemporaryDirectory() as td:
-            d = Path(td) / "Trajectory" / "Relaxed"
-            d.mkdir(parents=True)
-
-            def line(n, name, resn, chain, res, x, y, z, elem):
-                return (f"ATOM  {n:5d} {name:<4s} {resn:>3s} {chain}{res:4d}    "
-                        f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           {elem:>2s}\n")
-
-            atoms, n = [], 0
-            for res, resn, x in [(390, "GLY", 0.0), (393, "ALA", 3.0),
-                                 (450, "ALA", 30.0)]:
-                for name, elem, dx in [("N", "N", 0), ("CA", "C", 1.4),
-                                       ("C", "C", 2.8)]:
-                    n += 1
-                    atoms.append(line(n, name, resn, "A", res, x + dx, 0, 0, elem))
-            for res, resn, x in [(1, "ALA", 0.7), (2, "ALA", 3.0)]:
-                for name, elem, dx, dy in [("N", "N", -1.4, 0), ("CA", "C", 0, 0),
-                                           ("CB", "C", 0, 1.5), ("C", "C", 1.4, 0)]:
-                    n += 1
-                    atoms.append(line(n, name, resn, "B", res, x + dx, dy, 0, elem))
-            (d / "EGFR_D3_Bcons_l80_s42.pdb").write_text("".join(atoms) + "END\n")
-
-            out = Path(td) / "out.json"
-            subprocess.run([sys.executable,
-                            str(SCRIPTS / "analyze_bindcraft_run.py"),
-                            "--run-dir", td, "--out", out], check=True)
-            r = json.loads(out.read_text())["trajectories"][0]
+            self.build_run(td)
+            p, data = self.run_analyzer(td, synthetic_map(td))
+            self.assertEqual(p.returncode, 0, p.stderr)
+            r = data["trajectories"][0]
+            self.assertEqual(r["status"], "ok")
             self.assertEqual(r["seed"], 42)
             self.assertEqual(r["binder_length"], 80)
+            # biological numbering ONLY via the map (locals 81, 84)
             self.assertEqual(r["B_res_contacted"], [390, 393])
+            self.assertEqual(r["target_res_contacted_local"], [81, 84])
+            self.assertEqual(r["target_res_contacted_biological"], [390, 393])
             self.assertFalse(r["migrated_off_B"])
+            self.assertAlmostEqual(r["fraction_interface_pairs_on_B"], 1.0)
+
+    def test_hotspots_reported_per_site(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.build_run(td)
+            _, data = self.run_analyzer(td, synthetic_map(td))
+            r = data["trajectories"][0]
+            hs = r["hotspots"]
+            self.assertTrue(hs["390"]["contacted"])
+            self.assertEqual(hs["390"]["local_index"], 81)
+            # binder res2 N sits at x=1.6, 390 CA at x=1.4 -> 0.2A minimum
+            self.assertAlmostEqual(hs["390"]["min_heavy_dist"], 0.2, places=1)
+            self.assertTrue(hs["393"]["contacted"])
+            self.assertEqual(hs["393"]["local_index"], 84)
+            # hotspot 399 (local 90) absent from the output PDB: explicit
+            # per-site fact, never a silent zero
+            self.assertFalse(hs["399"]["contacted"])
+            self.assertFalse(hs["399"]["present_in_output"])
+            self.assertIsNone(hs["399"]["min_heavy_dist"])
+            self.assertEqual(r["n_hotspots_contacted"], 2)
+            # H433 deliberately not a hotspot: geometry fact only
+            self.assertIsNone(r["H433_min_heavy_dist"])
+            self.assertIn("not pH-switch evidence", r["H433_note"])
+
+    def test_lifecycle_layers(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.build_run(td, folder="Accepted")
+            _, data = self.run_analyzer(td, synthetic_map(td))
+            r = data["trajectories"][0]
+            lc = r["lifecycle"]
+            self.assertEqual(lc["GENERATED"], "YES")
+            self.assertEqual(lc["BINDCRAFT_ACCEPTED"], "YES")
+            self.assertEqual(lc["NUMBERING_QC"], "PASS")
+            self.assertEqual(lc["EPITOPE_QC"], "PASS")
+            self.assertEqual(lc["CROP_EDGE_QC"], "PASS")
+            for layer in ("FULL_ECD_QC", "ASSAY_GEOMETRY_QC",
+                          "HUMAN_MOUSE_QC", "PH_MECHANISM_QC",
+                          "SUBMISSION_CANDIDATE"):
+                self.assertIsNone(lc[layer])
+
+    def test_numbering_qc_fails_on_unmapped_contacted_residue(self):
+        with tempfile.TemporaryDirectory() as td:
+            # local 999 is not in the 1..172 map; binder res3 touches it
+            self.build_run(td, binder_extra=[(3, 60.0)],
+                           target_extra=[(999, "GLY", 60.0)])
+            p, data = self.run_analyzer(td, synthetic_map(td),
+                                        expect_rc=1)
+            self.assertEqual(p.returncode, 1, p.stderr)
+            self.assertIn("NUMBERING_QC FAIL", p.stderr)
+            r = data["trajectories"][0]
+            self.assertEqual(r["numbering_unmapped_local"], [999])
+            self.assertEqual(r["lifecycle"]["NUMBERING_QC"], "FAIL")
+            self.assertEqual(data["summary"]["n_numbering_fail"], 1)
+
+    def test_wholly_unmappable_chain_a_is_numbering_error(self):
+        with tempfile.TemporaryDirectory() as td:
+            # chain A locals 500-502 while the map covers 1..172: wrong map
+            self.build_run(td, target_extra=[(500, "GLY", 60.0),
+                                             (501, "GLY", 63.0),
+                                             (502, "GLY", 66.0)])
+            del_targets = {81, 84, 141}
+            # rebuild without the mapped locals so EVERY local is unmapped
+            d = Path(td) / "Trajectory" / "Relaxed"
+            lines = [ln for ln in (d / "EGFR_D3_Bcons_l80_s42.pdb")
+                     .read_text().splitlines(keepends=True)
+                     if not (ln.startswith("ATOM  ") and ln[21] == "A"
+                             and int(ln[22:26]) in del_targets)]
+            (d / "EGFR_D3_Bcons_l80_s42.pdb").write_text("".join(lines))
+            p, data = self.run_analyzer(td, synthetic_map(td), expect_rc=1)
+            self.assertEqual(p.returncode, 1, p.stderr)
+            r = data["trajectories"][0]
+            self.assertTrue(r["status"].startswith("numbering_error"),
+                            r["status"])
+            self.assertEqual(data["summary"]["n_numbering_fail"], 1)
+
+    def test_missing_map_fails_loudly(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.build_run(td)
+            missing = Path(td) / "no_such_map.json"
+            p, _ = self.run_analyzer(td, missing)
+            self.assertNotEqual(p.returncode, 0)
+            self.assertIn("FAIL LOUDLY", p.stderr)
+            self.assertIn("no_such_map.json", p.stderr)
+
+    def test_naive_biological_lookup_cannot_work_on_local_pdb(self):
+        """BUG 017 documentation: the pre-fix approach read resseq as the
+        biological number; on a local-numbered output PDB hotspot 390 simply
+        does not exist as resseq 390."""
+        with tempfile.TemporaryDirectory() as td:
+            path = self.build_run(td)
+            ca = {}
+            with open(path) as fh:
+                for line in fh:
+                    if line.startswith("ATOM") and line[12:16].strip() == "CA" \
+                            and line[21] == "A":
+                        ca[int(line[22:26])] = line[17:20].strip()
+        # (context manager closed above on purpose: ca is the final state)
+        self.assertEqual(sorted(ca), [81, 84, 141])
+        self.assertNotIn(390, ca, "hotspot 390 is local 81 — a naive "
+                         "biological lookup on the local frame is the "
+                         "BUG 017 analysis bug")
+
+
+TARGET_MAP = PROC / "target_residue_map.json"
+CROP_PDB = PROC / "6ARU_chainA_domain3_310-481.pdb"
+RESIDUE_CSV = PROC / "residue_map.csv"
+REF_CIF = ROOT / "data" / "raw" / "6ARU.cif"
+
+
+class TestTargetResidueMap(unittest.TestCase):
+    """Item 12: the DERIVED local->biological mapping artifact and its
+    fail-loudly generator."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(SCRIPTS))
+        import build_target_residue_map as bmap
+        cls.bmap = bmap
+        cls.artifact = json.loads(TARGET_MAP.read_text())
+        cls.by_local = {r["output_local_index"]: r
+                        for r in cls.artifact["residues"]}
+
+    def test_bug017_anchor_residues(self):
+        self.assertEqual(self.by_local[1]["biological_number"], 310)
+        self.assertEqual(self.by_local[81]["biological_number"], 390)
+        self.assertEqual(self.by_local[81]["residue_name"], "GLN")
+        self.assertEqual(self.by_local[84]["biological_number"], 393)
+        self.assertEqual(self.by_local[84]["residue_name"], "ASP")
+        self.assertEqual(self.by_local[124]["biological_number"], 433)
+        self.assertEqual(self.by_local[124]["residue_name"], "HIS")
+        self.assertEqual(self.by_local[172]["biological_number"], 481)
+        self.assertEqual(self.by_local[172]["residue_name"], "PHE")
+
+    def test_contiguous_and_strictly_increasing(self):
+        locals_ = [r["output_local_index"] for r in self.artifact["residues"]]
+        bios = [r["biological_number"] for r in self.artifact["residues"]]
+        self.assertEqual(locals_, list(range(1, 173)))
+        self.assertEqual(bios, list(range(310, 482)))
+
+    def test_residue_names_match_crop_pdb(self):
+        crop = {}
+        with open(CROP_PDB) as fh:
+            for line in fh:
+                if line.startswith("ATOM  ") and line[21] == "A":
+                    crop.setdefault(int(line[22:26]), line[17:20].strip())
+        self.assertEqual(len(crop), 172)
+        for r in self.artifact["residues"]:
+            self.assertEqual(r["input_pdb_residue"],
+                             r["biological_number"])
+            self.assertEqual(r["residue_name"], crop[r["biological_number"]])
+
+    def test_generator_rebuild_matches_committed_artifact(self):
+        self.assertEqual(self.bmap.build(), self.artifact)
+
+    def test_generator_fails_loudly_on_identity_conflict(self):
+        with tempfile.TemporaryDirectory() as td:
+            bad_csv = Path(td) / "residue_map.csv"
+            with open(RESIDUE_CSV, newline="") as fh:
+                reader = csv.DictReader(fh)
+                fields = reader.fieldnames
+                rows = list(reader)
+            for row in rows:
+                if row["uniprot_pos"] == "390":
+                    row["uniprot_aa"] = "G"   # crop PDB residue 390 is GLN
+            with open(bad_csv, "w", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=fields)
+                w.writeheader()
+                w.writerows(rows)
+            with self.assertRaises(SystemExit) as cm:
+                self.bmap.build(csv_path=bad_csv)
+            self.assertIn("FAIL LOUDLY", str(cm.exception))
+
+    def test_generator_fails_loudly_on_gap_in_crop(self):
+        with tempfile.TemporaryDirectory() as td:
+            bad = Path(td) / "crop.pdb"
+            with open(CROP_PDB) as src, open(bad, "w") as out:
+                for line in src:
+                    if (line.startswith("ATOM  ") and line[21] == "A"
+                            and int(line[22:26]) == 350):
+                        continue
+                    out.write(line)
+            with self.assertRaises(SystemExit) as cm:
+                self.bmap.build(crop_pdb=bad)
+            self.assertIn("contiguous", str(cm.exception))
+
+
+class TestFullEcdAudit(unittest.TestCase):
+    """Item 15: full-ECD context audit — Kabsch into the reference frame,
+    per-domain geometry facts, glycan screen, crop-edge risk."""
+
+    REF_N = 12
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(SCRIPTS))
+        import audit_full_ecd_context as afe
+        cls.afe = afe
+
+    # ---- synthetic reference: chain A auth 1..12 (bio 1..12 via the CSV),
+    # residue i at x = 10*i; glycan NAG on chain X near auth 1.
+    @classmethod
+    def build_reference(cls, td):
+        atoms, n = [], 0
+        for i in range(1, cls.REF_N + 1):
+            for an, dx in (("N", -0.5), ("CA", 0.0), ("C", 0.5)):
+                n += 1
+                atoms.append(pdb_line(n, an, "ALA", "A", i, 10 * i + dx,
+                                      0, 0, an[0]))
+        for an, dx, dy in (("C1", 2.0, 2.0), ("C2", 3.0, 2.0)):
+            n += 1
+            atoms.append(pdb_line(n, an, "NAG", "X", 1, 10 + dx, dy, 0, "C"))
+        ref = Path(td) / "reference.pdb"
+        ref.write_text("".join(atoms) + "END\n")
+        return ref
+
+    @staticmethod
+    def build_csv(td):
+        p = Path(td) / "residue_map.csv"
+        lines = ["species,uniprot_pos,pdb_auth_seq_id,in_pdb_construct"]
+        lines += [f"human,{i},{i},yes" for i in range(1, 13)]
+        p.write_text("\n".join(lines) + "\n")
+        return p
+
+    @classmethod
+    def build_complex(cls, td, with_edge_binder=True,
+                      name="complex_l12_s1.pdb"):
+        """chain A locals 1..4 = crop bio 9..12 with coords identical to the
+        reference (identity frame). Binder: res1 near bio 3 (outside crop),
+        res2 near bio 9 (crop edge, optional), res3 near the NAG."""
+        atoms, n = [], 0
+        for loc in range(1, 5):
+            for an, dx in (("N", -0.5), ("CA", 0.0), ("C", 0.5)):
+                n += 1
+                atoms.append(pdb_line(n, an, "ALA", "A", loc,
+                                      10 * (loc + 8) + dx, 0, 0, an[0]))
+        anchors = [(1, 33.0, 0.0, 0.0), (3, 12.0, 2.0, 2.5)]
+        if with_edge_binder:
+            anchors.insert(1, (2, 93.0, 0.0, 0.0))
+        for res, x, y, z in anchors:
+            for an, dx, dy, dz in [("CA", 0, 0, 0), ("CB", 1.0, 0.6, 0.3)]:
+                n += 1
+                atoms.append(pdb_line(n, an, "ALA", "B", res, x + dx,
+                                      y + dy, z + dz, "C"))
+        p = Path(td) / name
+        p.write_text("".join(atoms) + "END\n")
+        return p
+
+    def run_audit(self, td, complex_path, reference, extra=()):
+        out = Path(td) / "audit.json"
+        cmd = [sys.executable, str(SCRIPTS / "audit_full_ecd_context.py"),
+               "--complex-pdb", str(complex_path), "--out", str(out),
+               "--residue-map", str(synthetic_map(td, lo_bio=9, n=4)),
+               "--residue-map-csv", str(self.build_csv(td)),
+               "--reference", str(reference),
+               "--domains", "D1:1-4,D2:5-8,D3:9-12",
+               "--crop", "9-12", "--edge-window", "1",
+               "--min-common-ca", "3", *extra]
+        p = subprocess.run(cmd, capture_output=True, text=True)
+        data = json.loads(out.read_text()) if out.exists() else None
+        return p, data
+
+    def test_identity_frame_self_alignment_and_flags(self):
+        with tempfile.TemporaryDirectory() as td:
+            ref = self.build_reference(td)
+            cpx = self.build_complex(td)
+            p, data = self.run_audit(td, cpx, ref)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            self.assertAlmostEqual(data["alignment"]["rmsd"], 0.0, places=3)
+            self.assertEqual(data["alignment"]["n_common_ca"], 4)
+            self.assertEqual(data["alignment"]["coverage_of_crop"], 1.0)
+            dom = data["domains"]
+            self.assertEqual(dom["D1"]["contacted_target_bio"], [1, 3])
+            # binder res1 CA (33,0,0) vs auth3 C (30.5,0,0)
+            self.assertAlmostEqual(dom["D1"]["min_binder_heavy_dist"], 2.5,
+                                   places=1)
+            self.assertEqual(dom["D2"]["n_contact_pairs_lt_cutoff"], 0)
+            self.assertTrue(dom["D3"]["n_contact_pairs_lt_cutoff"] > 0)
+            flags = data["flags"]
+            self.assertTrue(flags["CONTACTS_OUTSIDE_CROP"])
+            self.assertTrue(flags["CROP_EDGE_RISK"])
+            self.assertTrue(flags["GLYCAN_CONTACT"])
+            self.assertFalse(flags["ALIGNMENT_POOR"])
+            self.assertFalse(flags["ALIGNMENT_UNRELIABLE"])
+            self.assertEqual(data["glycans"]["contacted_comp_ids"], ["NAG"])
+            self.assertAlmostEqual(data["glycans"]["min_binder_heavy_dist"],
+                                   2.5, places=1)
+            self.assertEqual(data["crop_edge"]["edge_bio"], [9, 12])
+            self.assertGreaterEqual(data["crop_edge"]["n_contact_pairs"], 1)
+            self.assertEqual(data["outside_crop"]["contacted_target_bio"],
+                             [1, 3])
+
+    def test_no_edge_binder_no_edge_flag(self):
+        with tempfile.TemporaryDirectory() as td:
+            ref = self.build_reference(td)
+            cpx = self.build_complex(td, with_edge_binder=False)
+            p, data = self.run_audit(td, cpx, ref)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            self.assertFalse(data["flags"]["CROP_EDGE_RISK"])
+            self.assertEqual(data["crop_edge"]["n_contact_pairs"], 0)
+
+    def test_visualization_pdb_written(self):
+        with tempfile.TemporaryDirectory() as td:
+            ref = self.build_reference(td)
+            cpx = self.build_complex(td)
+            viz = Path(td) / "viz.pdb"
+            p, _ = self.run_audit(td, cpx, ref,
+                                  extra=["--viz-pdb", str(viz)])
+            self.assertEqual(p.returncode, 0, p.stderr)
+            lines = [ln for ln in viz.read_text().splitlines()
+                     if ln.startswith("ATOM")]
+            self.assertEqual(sorted({ln[21] for ln in lines}), ["A", "B"])
+            self.assertEqual(sum(1 for ln in lines
+                                 if ln[21] == "A" and ln[12:16].strip()
+                                 == "CA"), self.REF_N)
+
+    def test_kabsch_recovers_known_rigid_transform(self):
+        if self.afe.np is None:
+            self.skipTest("numpy unavailable")
+        import numpy as np
+        rng = np.random.default_rng(7)
+        P = rng.normal(size=(30, 3))
+        theta = np.pi / 2
+        R0 = np.array([[np.cos(theta), -np.sin(theta), 0.0],
+                       [np.sin(theta), np.cos(theta), 0.0],
+                       [0.0, 0.0, 1.0]])
+        t0 = np.array([5.0, -3.0, 2.0])
+        Q = P @ R0 + t0
+        R, t, rmsd = self.afe.kabsch(P, Q)
+        self.assertLess(rmsd, 1e-6)
+        self.assertTrue(np.allclose(R, R0, atol=1e-8))
+        self.assertTrue(np.allclose(t, t0, atol=1e-8))
+
+    def test_kabsch_never_returns_improper_rotation(self):
+        if self.afe.np is None:
+            self.skipTest("numpy unavailable")
+        import numpy as np
+        rng = np.random.default_rng(11)
+        P = rng.normal(size=(30, 3))
+        Q = P @ np.diag([1.0, 1.0, -1.0])   # mirror: no proper rotation fits
+        R, _t, rmsd = self.afe.kabsch(P, Q)
+        self.assertGreater(float(np.linalg.det(R)), 0.9)
+        self.assertGreater(rmsd, 0.1)
+
+    def test_kabsch_requires_numpy_fails_loudly(self):
+        saved = self.afe.np
+        try:
+            self.afe.np = None
+            with self.assertRaises(SystemExit) as cm:
+                self.afe.kabsch([[0.0, 0.0, 0.0]], [[1.0, 1.0, 1.0]])
+        finally:
+            self.afe.np = saved
+        self.assertIn("FAIL LOUDLY", str(cm.exception))
+
+    def test_kabsch_refuses_too_few_points(self):
+        if self.afe.np is None:
+            self.skipTest("numpy unavailable")
+        import numpy as np
+        with self.assertRaises(SystemExit) as cm:
+            self.afe.kabsch(np.zeros((2, 3)), np.ones((2, 3)))
+        self.assertIn("FAIL LOUDLY", str(cm.exception))
+
+    def test_real_6aru_cif_end_to_end(self):
+        """Integration: real 6ARU.cif + real maps; crop PDB renumbered to
+        local 1..172 (bio-309, the exact BindCraft transform) must align
+        with RMSD ~0 and reach Domain IV outside the crop."""
+        if not REF_CIF.is_file():
+            self.skipTest("data/raw/6ARU.cif not downloaded")
+        bio_auth, auth_bio = self.afe.load_bio_auth(RESIDUE_CSV)
+        self.assertEqual(bio_auth[310], 286)   # 6ARU auth = UniProt - 24
+        self.assertEqual(auth_bio[286], 310)
+        polymer, het, fmt, _sha = self.afe.load_reference(REF_CIF)
+        self.assertEqual(fmt, "cif")
+        self.assertIn(286, polymer["A"])
+        self.assertTrue(any(h["comp"] == "NAG" for h in het))
+        with tempfile.TemporaryDirectory() as td:
+            cpx = Path(td) / "complex_l172_s1.pdb"
+            with open(CROP_PDB) as src, open(cpx, "w") as out:
+                for line in src:
+                    if line.startswith("ATOM  "):
+                        loc = int(line[22:26]) - 309
+                        out.write(line[:22] + f"{loc:4d}" + line[26:])
+            anchor = polymer["A"][bio_auth[500]]["atoms"]["CA"]
+            atoms = [pdb_line(1, "CA", "ALA", "B", 1,
+                              anchor[0] + 3.0, anchor[1], anchor[2], "C"),
+                     pdb_line(2, "CA", "ALA", "B", 2,
+                              anchor[0] + 4.5, anchor[1], anchor[2], "C")]
+            with open(cpx, "a") as out:
+                out.write("".join(atoms) + "END\n")
+            out_json = Path(td) / "audit.json"
+            p = subprocess.run(
+                [sys.executable, str(SCRIPTS / "audit_full_ecd_context.py"),
+                 "--complex-pdb", str(cpx), "--out", str(out_json),
+                 "--residue-map", str(TARGET_MAP),
+                 "--residue-map-csv", str(RESIDUE_CSV),
+                 "--reference", str(REF_CIF)],
+                capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, p.stderr)
+            data = json.loads(out_json.read_text())
+            self.assertEqual(data["alignment"]["n_common_ca"], 172)
+            self.assertLess(data["alignment"]["rmsd"], 0.01)
+            self.assertEqual(data["alignment"]["coverage_of_crop"], 1.0)
+            self.assertGreater(
+                data["domains"]["IV"]["n_contact_pairs_lt_cutoff"], 0,
+                "binder was anchored 3A from bio 500 (Domain IV)")
+            self.assertTrue(data["flags"]["CONTACTS_OUTSIDE_CROP"])
+            self.assertFalse(data["flags"]["CROP_EDGE_RISK"])
+            self.assertEqual(data["numbering"]["unmapped_local"], [])
 
 
 # ===========================================================================
@@ -1182,7 +1632,8 @@ class TestReliabilityStaticGuards(unittest.TestCase):
         "stage2_checkpoint.py", "stage2_run_job.py", "stage2_analyze.py",
         "stage2_orchestrate.py", "bindcraft_preflight.py",
         "ensure_af2_weights.py", "apply_bindcraft_patch.py",
-        "stage2_relax_failures.py",
+        "stage2_relax_failures.py", "analyze_bindcraft_run.py",
+        "audit_full_ecd_context.py", "build_target_residue_map.py",
     ]
 
     def test_forbidden_patterns_absent(self):
@@ -1797,6 +2248,8 @@ class TestNotebookCLIContract(unittest.TestCase):
             return mod
         preflight = load("stage2_preflight")
         analyzer = load("analyze_bindcraft_run")
+        audit = load("audit_full_ecd_context")
+        bmap = load("build_target_residue_map")
         return {
             "ensure_af2_weights.py": eaw.build_parser(),
             "stage2_orchestrate.py": orchestrate.build_parser(),
@@ -1804,6 +2257,8 @@ class TestNotebookCLIContract(unittest.TestCase):
             "stage2_preflight.py": preflight.build_parser(),
             "bindcraft_preflight.py": preflight.build_parser(),
             "analyze_bindcraft_run.py": analyzer.build_parser(),
+            "audit_full_ecd_context.py": audit.build_parser(),
+            "build_target_residue_map.py": bmap.build_parser(),
         }
 
     def test_notebook_flags_are_accepted(self):
@@ -1841,6 +2296,14 @@ class TestNotebookCLIContract(unittest.TestCase):
                               f"{script} does not accept {flag} "
                               f"(orchestrator CLI drift)")
 
+    @staticmethod
+    def _dummy_value(action):
+        if action.type is int:
+            return "3"
+        if action.type is float:
+            return "0.5"
+        return "dummy"
+
     def test_flag_with_dummy_values_actually_parses(self):
         parsers = self.parsers()
         for script, parser in parsers.items():
@@ -1851,10 +2314,11 @@ class TestNotebookCLIContract(unittest.TestCase):
                 argv.append(action.option_strings[0])
                 if action.nargs == 0:
                     continue          # store_true / count / help style
+                val = self._dummy_value(action)
                 if isinstance(action.nargs, int):
-                    argv.extend(["dummy"] * action.nargs)
+                    argv.extend([val] * action.nargs)
                 else:
-                    argv.append("dummy")
+                    argv.append(val)
             try:
                 parser.parse_args(argv)
             except SystemExit as exc:   # pragma: no cover - regression guard

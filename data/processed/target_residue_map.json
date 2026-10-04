@@ -1,0 +1,1401 @@
+{
+  "target_name": "human_EGFR_domainIII_310-481",
+  "source_chain": "A",
+  "source_pdb": "/Users/shenyz/projects/github/egfr-binder-challenge/data/processed/6ARU_chainA_domain3_310-481.pdb",
+  "source_pdb_sha256": "32fbf2ee377fd21a250b675f8dbef0e95451d272edffa623a6185313a06c3904",
+  "cross_checked_against": {
+    "residue_map_csv": "/Users/shenyz/projects/github/egfr-binder-challenge/data/processed/residue_map.csv",
+    "residue_map_csv_sha256": "a82bb2a2f0177ab4d240c56221a00f0890a1314e6cbf968d74e5325082459031"
+  },
+  "numbering_note": "crop input PDB resseq == UniProt biological numbering (6ARU auth + 24, verified via residue_map.csv); BindCraft output renumbers the target chain 1..N. Analysis must translate output_local_index -> biological_number via this artifact; guessing a constant offset is forbidden.",
+  "local_index_span": [
+    1,
+    172
+  ],
+  "biological_span": [
+    310,
+    481
+  ],
+  "residues": [
+    {
+      "input_pdb_residue": 310,
+      "biological_number": 310,
+      "output_local_index": 1,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "286"
+    },
+    {
+      "input_pdb_residue": 311,
+      "biological_number": 311,
+      "output_local_index": 2,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "287"
+    },
+    {
+      "input_pdb_residue": 312,
+      "biological_number": 312,
+      "output_local_index": 3,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "288"
+    },
+    {
+      "input_pdb_residue": 313,
+      "biological_number": 313,
+      "output_local_index": 4,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "289"
+    },
+    {
+      "input_pdb_residue": 314,
+      "biological_number": 314,
+      "output_local_index": 5,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "290"
+    },
+    {
+      "input_pdb_residue": 315,
+      "biological_number": 315,
+      "output_local_index": 6,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "291"
+    },
+    {
+      "input_pdb_residue": 316,
+      "biological_number": 316,
+      "output_local_index": 7,
+      "residue_name": "TYR",
+      "residue_aa1": "Y",
+      "pdb_auth_seq_id": "292"
+    },
+    {
+      "input_pdb_residue": 317,
+      "biological_number": 317,
+      "output_local_index": 8,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "293"
+    },
+    {
+      "input_pdb_residue": 318,
+      "biological_number": 318,
+      "output_local_index": 9,
+      "residue_name": "MET",
+      "residue_aa1": "M",
+      "pdb_auth_seq_id": "294"
+    },
+    {
+      "input_pdb_residue": 319,
+      "biological_number": 319,
+      "output_local_index": 10,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "295"
+    },
+    {
+      "input_pdb_residue": 320,
+      "biological_number": 320,
+      "output_local_index": 11,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "296"
+    },
+    {
+      "input_pdb_residue": 321,
+      "biological_number": 321,
+      "output_local_index": 12,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "297"
+    },
+    {
+      "input_pdb_residue": 322,
+      "biological_number": 322,
+      "output_local_index": 13,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "298"
+    },
+    {
+      "input_pdb_residue": 323,
+      "biological_number": 323,
+      "output_local_index": 14,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "299"
+    },
+    {
+      "input_pdb_residue": 324,
+      "biological_number": 324,
+      "output_local_index": 15,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "300"
+    },
+    {
+      "input_pdb_residue": 325,
+      "biological_number": 325,
+      "output_local_index": 16,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "301"
+    },
+    {
+      "input_pdb_residue": 326,
+      "biological_number": 326,
+      "output_local_index": 17,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "302"
+    },
+    {
+      "input_pdb_residue": 327,
+      "biological_number": 327,
+      "output_local_index": 18,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "303"
+    },
+    {
+      "input_pdb_residue": 328,
+      "biological_number": 328,
+      "output_local_index": 19,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "304"
+    },
+    {
+      "input_pdb_residue": 329,
+      "biological_number": 329,
+      "output_local_index": 20,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "305"
+    },
+    {
+      "input_pdb_residue": 330,
+      "biological_number": 330,
+      "output_local_index": 21,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "306"
+    },
+    {
+      "input_pdb_residue": 331,
+      "biological_number": 331,
+      "output_local_index": 22,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "307"
+    },
+    {
+      "input_pdb_residue": 332,
+      "biological_number": 332,
+      "output_local_index": 23,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "308"
+    },
+    {
+      "input_pdb_residue": 333,
+      "biological_number": 333,
+      "output_local_index": 24,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "309"
+    },
+    {
+      "input_pdb_residue": 334,
+      "biological_number": 334,
+      "output_local_index": 25,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "310"
+    },
+    {
+      "input_pdb_residue": 335,
+      "biological_number": 335,
+      "output_local_index": 26,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "311"
+    },
+    {
+      "input_pdb_residue": 336,
+      "biological_number": 336,
+      "output_local_index": 27,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "312"
+    },
+    {
+      "input_pdb_residue": 337,
+      "biological_number": 337,
+      "output_local_index": 28,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "313"
+    },
+    {
+      "input_pdb_residue": 338,
+      "biological_number": 338,
+      "output_local_index": 29,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "314"
+    },
+    {
+      "input_pdb_residue": 339,
+      "biological_number": 339,
+      "output_local_index": 30,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "315"
+    },
+    {
+      "input_pdb_residue": 340,
+      "biological_number": 340,
+      "output_local_index": 31,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "316"
+    },
+    {
+      "input_pdb_residue": 341,
+      "biological_number": 341,
+      "output_local_index": 32,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "317"
+    },
+    {
+      "input_pdb_residue": 342,
+      "biological_number": 342,
+      "output_local_index": 33,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "318"
+    },
+    {
+      "input_pdb_residue": 343,
+      "biological_number": 343,
+      "output_local_index": 34,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "319"
+    },
+    {
+      "input_pdb_residue": 344,
+      "biological_number": 344,
+      "output_local_index": 35,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "320"
+    },
+    {
+      "input_pdb_residue": 345,
+      "biological_number": 345,
+      "output_local_index": 36,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "321"
+    },
+    {
+      "input_pdb_residue": 346,
+      "biological_number": 346,
+      "output_local_index": 37,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "322"
+    },
+    {
+      "input_pdb_residue": 347,
+      "biological_number": 347,
+      "output_local_index": 38,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "323"
+    },
+    {
+      "input_pdb_residue": 348,
+      "biological_number": 348,
+      "output_local_index": 39,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "324"
+    },
+    {
+      "input_pdb_residue": 349,
+      "biological_number": 349,
+      "output_local_index": 40,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "325"
+    },
+    {
+      "input_pdb_residue": 350,
+      "biological_number": 350,
+      "output_local_index": 41,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "326"
+    },
+    {
+      "input_pdb_residue": 351,
+      "biological_number": 351,
+      "output_local_index": 42,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "327"
+    },
+    {
+      "input_pdb_residue": 352,
+      "biological_number": 352,
+      "output_local_index": 43,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "328"
+    },
+    {
+      "input_pdb_residue": 353,
+      "biological_number": 353,
+      "output_local_index": 44,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "329"
+    },
+    {
+      "input_pdb_residue": 354,
+      "biological_number": 354,
+      "output_local_index": 45,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "330"
+    },
+    {
+      "input_pdb_residue": 355,
+      "biological_number": 355,
+      "output_local_index": 46,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "331"
+    },
+    {
+      "input_pdb_residue": 356,
+      "biological_number": 356,
+      "output_local_index": 47,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "332"
+    },
+    {
+      "input_pdb_residue": 357,
+      "biological_number": 357,
+      "output_local_index": 48,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "333"
+    },
+    {
+      "input_pdb_residue": 358,
+      "biological_number": 358,
+      "output_local_index": 49,
+      "residue_name": "HIS",
+      "residue_aa1": "H",
+      "pdb_auth_seq_id": "334"
+    },
+    {
+      "input_pdb_residue": 359,
+      "biological_number": 359,
+      "output_local_index": 50,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "335"
+    },
+    {
+      "input_pdb_residue": 360,
+      "biological_number": 360,
+      "output_local_index": 51,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "336"
+    },
+    {
+      "input_pdb_residue": 361,
+      "biological_number": 361,
+      "output_local_index": 52,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "337"
+    },
+    {
+      "input_pdb_residue": 362,
+      "biological_number": 362,
+      "output_local_index": 53,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "338"
+    },
+    {
+      "input_pdb_residue": 363,
+      "biological_number": 363,
+      "output_local_index": 54,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "339"
+    },
+    {
+      "input_pdb_residue": 364,
+      "biological_number": 364,
+      "output_local_index": 55,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "340"
+    },
+    {
+      "input_pdb_residue": 365,
+      "biological_number": 365,
+      "output_local_index": 56,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "341"
+    },
+    {
+      "input_pdb_residue": 366,
+      "biological_number": 366,
+      "output_local_index": 57,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "342"
+    },
+    {
+      "input_pdb_residue": 367,
+      "biological_number": 367,
+      "output_local_index": 58,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "343"
+    },
+    {
+      "input_pdb_residue": 368,
+      "biological_number": 368,
+      "output_local_index": 59,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "344"
+    },
+    {
+      "input_pdb_residue": 369,
+      "biological_number": 369,
+      "output_local_index": 60,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "345"
+    },
+    {
+      "input_pdb_residue": 370,
+      "biological_number": 370,
+      "output_local_index": 61,
+      "residue_name": "HIS",
+      "residue_aa1": "H",
+      "pdb_auth_seq_id": "346"
+    },
+    {
+      "input_pdb_residue": 371,
+      "biological_number": 371,
+      "output_local_index": 62,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "347"
+    },
+    {
+      "input_pdb_residue": 372,
+      "biological_number": 372,
+      "output_local_index": 63,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "348"
+    },
+    {
+      "input_pdb_residue": 373,
+      "biological_number": 373,
+      "output_local_index": 64,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "349"
+    },
+    {
+      "input_pdb_residue": 374,
+      "biological_number": 374,
+      "output_local_index": 65,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "350"
+    },
+    {
+      "input_pdb_residue": 375,
+      "biological_number": 375,
+      "output_local_index": 66,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "351"
+    },
+    {
+      "input_pdb_residue": 376,
+      "biological_number": 376,
+      "output_local_index": 67,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "352"
+    },
+    {
+      "input_pdb_residue": 377,
+      "biological_number": 377,
+      "output_local_index": 68,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "353"
+    },
+    {
+      "input_pdb_residue": 378,
+      "biological_number": 378,
+      "output_local_index": 69,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "354"
+    },
+    {
+      "input_pdb_residue": 379,
+      "biological_number": 379,
+      "output_local_index": 70,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "355"
+    },
+    {
+      "input_pdb_residue": 380,
+      "biological_number": 380,
+      "output_local_index": 71,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "356"
+    },
+    {
+      "input_pdb_residue": 381,
+      "biological_number": 381,
+      "output_local_index": 72,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "357"
+    },
+    {
+      "input_pdb_residue": 382,
+      "biological_number": 382,
+      "output_local_index": 73,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "358"
+    },
+    {
+      "input_pdb_residue": 383,
+      "biological_number": 383,
+      "output_local_index": 74,
+      "residue_name": "HIS",
+      "residue_aa1": "H",
+      "pdb_auth_seq_id": "359"
+    },
+    {
+      "input_pdb_residue": 384,
+      "biological_number": 384,
+      "output_local_index": 75,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "360"
+    },
+    {
+      "input_pdb_residue": 385,
+      "biological_number": 385,
+      "output_local_index": 76,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "361"
+    },
+    {
+      "input_pdb_residue": 386,
+      "biological_number": 386,
+      "output_local_index": 77,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "362"
+    },
+    {
+      "input_pdb_residue": 387,
+      "biological_number": 387,
+      "output_local_index": 78,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "363"
+    },
+    {
+      "input_pdb_residue": 388,
+      "biological_number": 388,
+      "output_local_index": 79,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "364"
+    },
+    {
+      "input_pdb_residue": 389,
+      "biological_number": 389,
+      "output_local_index": 80,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "365"
+    },
+    {
+      "input_pdb_residue": 390,
+      "biological_number": 390,
+      "output_local_index": 81,
+      "residue_name": "GLN",
+      "residue_aa1": "Q",
+      "pdb_auth_seq_id": "366"
+    },
+    {
+      "input_pdb_residue": 391,
+      "biological_number": 391,
+      "output_local_index": 82,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "367"
+    },
+    {
+      "input_pdb_residue": 392,
+      "biological_number": 392,
+      "output_local_index": 83,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "368"
+    },
+    {
+      "input_pdb_residue": 393,
+      "biological_number": 393,
+      "output_local_index": 84,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "369"
+    },
+    {
+      "input_pdb_residue": 394,
+      "biological_number": 394,
+      "output_local_index": 85,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "370"
+    },
+    {
+      "input_pdb_residue": 395,
+      "biological_number": 395,
+      "output_local_index": 86,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "371"
+    },
+    {
+      "input_pdb_residue": 396,
+      "biological_number": 396,
+      "output_local_index": 87,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "372"
+    },
+    {
+      "input_pdb_residue": 397,
+      "biological_number": 397,
+      "output_local_index": 88,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "373"
+    },
+    {
+      "input_pdb_residue": 398,
+      "biological_number": 398,
+      "output_local_index": 89,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "374"
+    },
+    {
+      "input_pdb_residue": 399,
+      "biological_number": 399,
+      "output_local_index": 90,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "375"
+    },
+    {
+      "input_pdb_residue": 400,
+      "biological_number": 400,
+      "output_local_index": 91,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "376"
+    },
+    {
+      "input_pdb_residue": 401,
+      "biological_number": 401,
+      "output_local_index": 92,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "377"
+    },
+    {
+      "input_pdb_residue": 402,
+      "biological_number": 402,
+      "output_local_index": 93,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "378"
+    },
+    {
+      "input_pdb_residue": 403,
+      "biological_number": 403,
+      "output_local_index": 94,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "379"
+    },
+    {
+      "input_pdb_residue": 404,
+      "biological_number": 404,
+      "output_local_index": 95,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "380"
+    },
+    {
+      "input_pdb_residue": 405,
+      "biological_number": 405,
+      "output_local_index": 96,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "381"
+    },
+    {
+      "input_pdb_residue": 406,
+      "biological_number": 406,
+      "output_local_index": 97,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "382"
+    },
+    {
+      "input_pdb_residue": 407,
+      "biological_number": 407,
+      "output_local_index": 98,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "383"
+    },
+    {
+      "input_pdb_residue": 408,
+      "biological_number": 408,
+      "output_local_index": 99,
+      "residue_name": "GLN",
+      "residue_aa1": "Q",
+      "pdb_auth_seq_id": "384"
+    },
+    {
+      "input_pdb_residue": 409,
+      "biological_number": 409,
+      "output_local_index": 100,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "385"
+    },
+    {
+      "input_pdb_residue": 410,
+      "biological_number": 410,
+      "output_local_index": 101,
+      "residue_name": "TRP",
+      "residue_aa1": "W",
+      "pdb_auth_seq_id": "386"
+    },
+    {
+      "input_pdb_residue": 411,
+      "biological_number": 411,
+      "output_local_index": 102,
+      "residue_name": "PRO",
+      "residue_aa1": "P",
+      "pdb_auth_seq_id": "387"
+    },
+    {
+      "input_pdb_residue": 412,
+      "biological_number": 412,
+      "output_local_index": 103,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "388"
+    },
+    {
+      "input_pdb_residue": 413,
+      "biological_number": 413,
+      "output_local_index": 104,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "389"
+    },
+    {
+      "input_pdb_residue": 414,
+      "biological_number": 414,
+      "output_local_index": 105,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "390"
+    },
+    {
+      "input_pdb_residue": 415,
+      "biological_number": 415,
+      "output_local_index": 106,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "391"
+    },
+    {
+      "input_pdb_residue": 416,
+      "biological_number": 416,
+      "output_local_index": 107,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "392"
+    },
+    {
+      "input_pdb_residue": 417,
+      "biological_number": 417,
+      "output_local_index": 108,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "393"
+    },
+    {
+      "input_pdb_residue": 418,
+      "biological_number": 418,
+      "output_local_index": 109,
+      "residue_name": "HIS",
+      "residue_aa1": "H",
+      "pdb_auth_seq_id": "394"
+    },
+    {
+      "input_pdb_residue": 419,
+      "biological_number": 419,
+      "output_local_index": 110,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "395"
+    },
+    {
+      "input_pdb_residue": 420,
+      "biological_number": 420,
+      "output_local_index": 111,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "396"
+    },
+    {
+      "input_pdb_residue": 421,
+      "biological_number": 421,
+      "output_local_index": 112,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "397"
+    },
+    {
+      "input_pdb_residue": 422,
+      "biological_number": 422,
+      "output_local_index": 113,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "398"
+    },
+    {
+      "input_pdb_residue": 423,
+      "biological_number": 423,
+      "output_local_index": 114,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "399"
+    },
+    {
+      "input_pdb_residue": 424,
+      "biological_number": 424,
+      "output_local_index": 115,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "400"
+    },
+    {
+      "input_pdb_residue": 425,
+      "biological_number": 425,
+      "output_local_index": 116,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "401"
+    },
+    {
+      "input_pdb_residue": 426,
+      "biological_number": 426,
+      "output_local_index": 117,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "402"
+    },
+    {
+      "input_pdb_residue": 427,
+      "biological_number": 427,
+      "output_local_index": 118,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "403"
+    },
+    {
+      "input_pdb_residue": 428,
+      "biological_number": 428,
+      "output_local_index": 119,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "404"
+    },
+    {
+      "input_pdb_residue": 429,
+      "biological_number": 429,
+      "output_local_index": 120,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "405"
+    },
+    {
+      "input_pdb_residue": 430,
+      "biological_number": 430,
+      "output_local_index": 121,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "406"
+    },
+    {
+      "input_pdb_residue": 431,
+      "biological_number": 431,
+      "output_local_index": 122,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "407"
+    },
+    {
+      "input_pdb_residue": 432,
+      "biological_number": 432,
+      "output_local_index": 123,
+      "residue_name": "GLN",
+      "residue_aa1": "Q",
+      "pdb_auth_seq_id": "408"
+    },
+    {
+      "input_pdb_residue": 433,
+      "biological_number": 433,
+      "output_local_index": 124,
+      "residue_name": "HIS",
+      "residue_aa1": "H",
+      "pdb_auth_seq_id": "409"
+    },
+    {
+      "input_pdb_residue": 434,
+      "biological_number": 434,
+      "output_local_index": 125,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "410"
+    },
+    {
+      "input_pdb_residue": 435,
+      "biological_number": 435,
+      "output_local_index": 126,
+      "residue_name": "GLN",
+      "residue_aa1": "Q",
+      "pdb_auth_seq_id": "411"
+    },
+    {
+      "input_pdb_residue": 436,
+      "biological_number": 436,
+      "output_local_index": 127,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "412"
+    },
+    {
+      "input_pdb_residue": 437,
+      "biological_number": 437,
+      "output_local_index": 128,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "413"
+    },
+    {
+      "input_pdb_residue": 438,
+      "biological_number": 438,
+      "output_local_index": 129,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "414"
+    },
+    {
+      "input_pdb_residue": 439,
+      "biological_number": 439,
+      "output_local_index": 130,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "415"
+    },
+    {
+      "input_pdb_residue": 440,
+      "biological_number": 440,
+      "output_local_index": 131,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "416"
+    },
+    {
+      "input_pdb_residue": 441,
+      "biological_number": 441,
+      "output_local_index": 132,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "417"
+    },
+    {
+      "input_pdb_residue": 442,
+      "biological_number": 442,
+      "output_local_index": 133,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "418"
+    },
+    {
+      "input_pdb_residue": 443,
+      "biological_number": 443,
+      "output_local_index": 134,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "419"
+    },
+    {
+      "input_pdb_residue": 444,
+      "biological_number": 444,
+      "output_local_index": 135,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "420"
+    },
+    {
+      "input_pdb_residue": 445,
+      "biological_number": 445,
+      "output_local_index": 136,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "421"
+    },
+    {
+      "input_pdb_residue": 446,
+      "biological_number": 446,
+      "output_local_index": 137,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "422"
+    },
+    {
+      "input_pdb_residue": 447,
+      "biological_number": 447,
+      "output_local_index": 138,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "423"
+    },
+    {
+      "input_pdb_residue": 448,
+      "biological_number": 448,
+      "output_local_index": 139,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "424"
+    },
+    {
+      "input_pdb_residue": 449,
+      "biological_number": 449,
+      "output_local_index": 140,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "425"
+    },
+    {
+      "input_pdb_residue": 450,
+      "biological_number": 450,
+      "output_local_index": 141,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "426"
+    },
+    {
+      "input_pdb_residue": 451,
+      "biological_number": 451,
+      "output_local_index": 142,
+      "residue_name": "ARG",
+      "residue_aa1": "R",
+      "pdb_auth_seq_id": "427"
+    },
+    {
+      "input_pdb_residue": 452,
+      "biological_number": 452,
+      "output_local_index": 143,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "428"
+    },
+    {
+      "input_pdb_residue": 453,
+      "biological_number": 453,
+      "output_local_index": 144,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "429"
+    },
+    {
+      "input_pdb_residue": 454,
+      "biological_number": 454,
+      "output_local_index": 145,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "430"
+    },
+    {
+      "input_pdb_residue": 455,
+      "biological_number": 455,
+      "output_local_index": 146,
+      "residue_name": "GLU",
+      "residue_aa1": "E",
+      "pdb_auth_seq_id": "431"
+    },
+    {
+      "input_pdb_residue": 456,
+      "biological_number": 456,
+      "output_local_index": 147,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "432"
+    },
+    {
+      "input_pdb_residue": 457,
+      "biological_number": 457,
+      "output_local_index": 148,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "433"
+    },
+    {
+      "input_pdb_residue": 458,
+      "biological_number": 458,
+      "output_local_index": 149,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "434"
+    },
+    {
+      "input_pdb_residue": 459,
+      "biological_number": 459,
+      "output_local_index": 150,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "435"
+    },
+    {
+      "input_pdb_residue": 460,
+      "biological_number": 460,
+      "output_local_index": 151,
+      "residue_name": "ASP",
+      "residue_aa1": "D",
+      "pdb_auth_seq_id": "436"
+    },
+    {
+      "input_pdb_residue": 461,
+      "biological_number": 461,
+      "output_local_index": 152,
+      "residue_name": "VAL",
+      "residue_aa1": "V",
+      "pdb_auth_seq_id": "437"
+    },
+    {
+      "input_pdb_residue": 462,
+      "biological_number": 462,
+      "output_local_index": 153,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "438"
+    },
+    {
+      "input_pdb_residue": 463,
+      "biological_number": 463,
+      "output_local_index": 154,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "439"
+    },
+    {
+      "input_pdb_residue": 464,
+      "biological_number": 464,
+      "output_local_index": 155,
+      "residue_name": "SER",
+      "residue_aa1": "S",
+      "pdb_auth_seq_id": "440"
+    },
+    {
+      "input_pdb_residue": 465,
+      "biological_number": 465,
+      "output_local_index": 156,
+      "residue_name": "GLY",
+      "residue_aa1": "G",
+      "pdb_auth_seq_id": "441"
+    },
+    {
+      "input_pdb_residue": 466,
+      "biological_number": 466,
+      "output_local_index": 157,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "442"
+    },
+    {
+      "input_pdb_residue": 467,
+      "biological_number": 467,
+      "output_local_index": 158,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "443"
+    },
+    {
+      "input_pdb_residue": 468,
+      "biological_number": 468,
+      "output_local_index": 159,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "444"
+    },
+    {
+      "input_pdb_residue": 469,
+      "biological_number": 469,
+      "output_local_index": 160,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "445"
+    },
+    {
+      "input_pdb_residue": 470,
+      "biological_number": 470,
+      "output_local_index": 161,
+      "residue_name": "CYS",
+      "residue_aa1": "C",
+      "pdb_auth_seq_id": "446"
+    },
+    {
+      "input_pdb_residue": 471,
+      "biological_number": 471,
+      "output_local_index": 162,
+      "residue_name": "TYR",
+      "residue_aa1": "Y",
+      "pdb_auth_seq_id": "447"
+    },
+    {
+      "input_pdb_residue": 472,
+      "biological_number": 472,
+      "output_local_index": 163,
+      "residue_name": "ALA",
+      "residue_aa1": "A",
+      "pdb_auth_seq_id": "448"
+    },
+    {
+      "input_pdb_residue": 473,
+      "biological_number": 473,
+      "output_local_index": 164,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "449"
+    },
+    {
+      "input_pdb_residue": 474,
+      "biological_number": 474,
+      "output_local_index": 165,
+      "residue_name": "THR",
+      "residue_aa1": "T",
+      "pdb_auth_seq_id": "450"
+    },
+    {
+      "input_pdb_residue": 475,
+      "biological_number": 475,
+      "output_local_index": 166,
+      "residue_name": "ILE",
+      "residue_aa1": "I",
+      "pdb_auth_seq_id": "451"
+    },
+    {
+      "input_pdb_residue": 476,
+      "biological_number": 476,
+      "output_local_index": 167,
+      "residue_name": "ASN",
+      "residue_aa1": "N",
+      "pdb_auth_seq_id": "452"
+    },
+    {
+      "input_pdb_residue": 477,
+      "biological_number": 477,
+      "output_local_index": 168,
+      "residue_name": "TRP",
+      "residue_aa1": "W",
+      "pdb_auth_seq_id": "453"
+    },
+    {
+      "input_pdb_residue": 478,
+      "biological_number": 478,
+      "output_local_index": 169,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "454"
+    },
+    {
+      "input_pdb_residue": 479,
+      "biological_number": 479,
+      "output_local_index": 170,
+      "residue_name": "LYS",
+      "residue_aa1": "K",
+      "pdb_auth_seq_id": "455"
+    },
+    {
+      "input_pdb_residue": 480,
+      "biological_number": 480,
+      "output_local_index": 171,
+      "residue_name": "LEU",
+      "residue_aa1": "L",
+      "pdb_auth_seq_id": "456"
+    },
+    {
+      "input_pdb_residue": 481,
+      "biological_number": 481,
+      "output_local_index": 172,
+      "residue_name": "PHE",
+      "residue_aa1": "F",
+      "pdb_auth_seq_id": "457"
+    }
+  ],
+  "counts": {
+    "mapped": 172,
+    "conflicts": 0
+  }
+}

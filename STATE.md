@@ -96,6 +96,13 @@
 - **生产门（item 20）**：`stage2_configure.build_advanced` 拒绝 `max_trajectories>3`，除非显式 `STAGE2_ALLOW_PRODUCTION=1`；默认保持小算力 smoke 模式。
 - 验证：新增 18 个回归测试；**142/142**（unittest discover 与 .venv pytest 双跑）。
 
+### Checkpoint G — 编号映射与全 ECD 上下文审计（2026-10-04，收口重构 G）
+
+- **编号映射工件（item 12，BUG 017）**：新 [scripts/build_target_residue_map.py](scripts/build_target_residue_map.py) 从 crop PDB（断言 resseq 恰为连续 310..481）× [residue_map.csv](data/processed/residue_map.csv)（UniProt 位点+残基身份交叉核对，冲突 FAIL LOUDLY）派生 [target_residue_map.json](data/processed/target_residue_map.json)（local 1..172 ↔ bio 310..481，含 auth 换算与 SHA256 溯源）。锚点：81→390(GLN)、84→393(ASP)、124→433(HIS)、172→481(PHE)。禁止猜固定 offset。
+- **几何分析器强制走映射**：[analyze_bindcraft_run.py](scripts/analyze_bindcraft_run.py) 重写——缺失/损坏 map 拒绝运行（SystemExit FAIL LOUDLY）；逐 hotspot 位点距离+present/contacted（非 occupancy-only）；H433 仅几何事实（明示非 pH 证据）；edge window 可配置（默认 5，不再硬编码 3）；binder N/C 端窗口统计 + `C_TERMINAL_ASSAY_RISK`（只记录不拒）；lifecycle 五层可算（GENERATED..CROP_EDGE_QC）、五层恒 null；整链不可映射记 `numbering_error` 并使 CLI 退出码 1。
+- **全 ECD 上下文审计（item 15）**：新 [audit_full_ecd_context.py](scripts/audit_full_ecd_context.py)——complex(chain A local+chain B) 经映射+CSV 换算 Kabsch CA 对齐到 [6ARU.cif](data/raw/6ARU.cif)（stdlib CIF tokenizer + numpy 带 guard，缺失即 FAIL LOUDLY）；输出 RMSD/覆盖、Domain I/II/III/IV 逐域最小距离+接触+clash、glycan(NAG 等)接触、`CONTACTS_OUTSIDE_CROP`/`CROP_EDGE_RISK`/`ALIGNMENT_POOR` 等旗标；只报几何事实不下结论；可选输出全 ECD CA+变换后 binder 可视化 PDB。
+- 验证：新增 20 个回归测试（映射锚点/连续性/生成器冲突 FAIL LOUDLY、分析器 local 帧几何/逐 hotspot/lifecycle/映射强制/BUG 017 演示、Kabsch 已知旋转恢复/拒绝镜像/numpy guard、真实 6ARU.cif 端到端 RMSD<0.01+Domain IV 接触）；**162/162**（unittest discover 与 .venv pytest 双跑）。
+
 ## 当前 Blockers（真实阻挡）
 
 1. **AWAITING_CLOUD_SMOKE_RERUN (A7)** — 可靠性合并 A/B/C + D-019 容错补丁已完成（BUG 001–016 全部 FIXED 或 EVIDENCE；124/124 测试）。等用户在 Colab：配 `GITHUB_TOKEN` secret → T4 GPU → 上传薄 notebook → 从 Cell A 顺序跑到 G（Cell D 自动幂等打补丁）；已持久化的 PDL1 run 会被采纳为 LEGACY_CHECKPOINT（或校验通过直接 SKIP），权重走 Drive 缓存。reset/配额中断后从 A 跑到 G 即可恢复。PDL1 环境门（rc0 + relaxed PDB）未重新证实前阶段 3 不得开始。
