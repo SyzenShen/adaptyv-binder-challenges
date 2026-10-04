@@ -180,7 +180,7 @@ class TestThinNotebook(unittest.TestCase):
     def test_frozen_pins_present(self):
         for needle in ("7713aa0d0d351e4117a8befeb8541f3a8ebd3368",
                        "e31a56fe1d9b4de25c8697f3a28b75892941cc72",
-                       "452ac95c810614ad5c7602ef652644a4c63382c6"):
+                       "9f6c384f65d9af654bb205b0819d41fcbc85f176"):
             self.assertIn(needle, self.text)
         self.assertNotIn("hardtarget", self.text.lower())
 
