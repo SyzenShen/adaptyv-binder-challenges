@@ -1,5 +1,8 @@
 # EGFR pH-switch minibinder — a reproducible design workflow
 
+> **中文版完整攻略在本文件底部（搜索「# 中文版完整攻略」）。**
+> A complete Chinese version of this guide is at the bottom of this file.
+
 This repo runs one real protein-design pipeline end to end: pick a target
 region on human EGFR, generate small de novo minibinder candidates against it
 on a free Google Colab GPU, then audit what actually came out — geometry,
@@ -7,10 +10,9 @@ residue numbering, crop artefacts, and the limits of what a computer can tell
 you about binding.
 
 It grew out of getting one real workflow to survive ordinary laptop hardware,
-Colab resets, GPU quotas, and a JAX version update that silently broke a run
-mid-flight. It is written for someone who has never used Colab, Git, or a
-command line before. Every hard-won mistake is written down — see
-[Problems we actually hit](#problems-we-actually-hit).
+Colab resets, GPU quotas, and a JAX version update that broke a run mid-flight.
+It is written for someone who has never used Colab, Git, or a command line
+before. See [Problems you may hit](#problems-you-may-hit).
 
 **Honesty up front.** Nothing in this repo proves that any binder binds EGFR,
 works at pH 6.5, or would ever succeed in a lab. `Accepted` is BindCraft's own
@@ -52,44 +54,42 @@ If you read nothing else, read this.
 Target preparation (UniProt P00533, PDB 6ARU)
       |
       v
-Residue mapping (biological numbering verified)          [DONE - this repo]
+Residue mapping (biological numbering verified)
       |
       v
-Epitope choice (envelope B: 390-403 + 421-431)           [DONE - frozen decision]
+Epitope choice (envelope B: 390-403 + 421-431)
       |
       v
-Crop a small target PDB (Domain III 310-481, 172 res)    [DONE - this repo]
+Crop a small target PDB (Domain III 310-481, 172 res)
       |
       v
-Colab environment + preflight (notebook cells A-E)       [DONE - this repo]
+Colab environment + preflight (notebook cells A-E)
       |
       v
-PDL1 control run (notebook cell G, gate)                 [DONE - this repo]
+PDL1 control run (notebook cell G, gate)
       |
       v
-EGFR micro generation (BindCraft: MPNN + AF2 + filters)  [DONE - this repo, tiny caps]
+EGFR micro generation (BindCraft: MPNN + AF2 + filters)
       |
       v
-Geometry + numbering QC (analyze_bindcraft_run.py)       [DONE - this repo]
+Geometry + numbering QC (analyze_bindcraft_run.py)
       |
       v
-Full-ECD context check (audit_full_ecd_context.py)       [DONE - this repo]
+Full-ECD context check (audit_full_ecd_context.py)
       |
       v
-Human/mouse + pH mechanism checks                        [NOT YET - QC layer = null]
+Human/mouse + pH mechanism checks
       |
       v
-Shortlist / final candidate selection                    [NOT YET]
+Shortlist / final candidate selection
       |
       v
-Wet lab                                                  [OUT OF SCOPE for this repo]
+Wet lab
 ```
 
-This repo currently covers everything from target preparation down to the
-full-ECD context check. The human/mouse and pH layers are deliberately
-reported as `null` — the tools exist but the QC layer is not implemented, and
-we refuse to guess. Marking work as done that was not done is exactly the
-failure mode this repo is built to avoid.
+This repo covers target preparation through the full-ECD context check. The
+human/mouse structural check, the pH-mechanism layer, final shortlisting, and
+wet-lab work are later stages and are not part of it.
 
 ## Quick start (first real run)
 
@@ -473,8 +473,8 @@ is a hypothesis, not a result.
 
 ## 36. Candidate promotion states
 
-Every candidate carries a lifecycle, and every layer is either computed or
-honestly `null`:
+Every candidate carries a lifecycle, and each layer is either computed or
+`null`:
 
 | Layer | Meaning | Status in Stage 2 |
 |---|---|---|
@@ -580,14 +580,13 @@ frequency ones:
 
 ## 43. Cost/compute expectations
 
-Everything above runs on the **free** Colab tier; this project's paid
-compute budget is deliberately 0. Realistic first-session shape: ~10–25 min
+Everything above runs on the **free** Colab tier; this project uses no paid
+compute. Realistic first-session shape: ~10–25 min
 environment, ~5.3 GB weights download (once, then cached), ~30 min PDL1
 control, and the EGFR micro-run (3 trajectories) — order of tens of minutes
-on a T4. What is *not* known yet, and is honestly `null` everywhere: exact
-per-trajectory wall time and success rate on this hardware — those numbers
-come from the first real smoke run, not from optimism. Expect resets and
-quota days; the workflow is built around them, not against them.
+on a T4. Exact per-trajectory wall time and success rate on this hardware
+are not known yet; those numbers come from the first real smoke run. Expect
+resets and quota days; the workflow is built around them, not against them.
 
 ## 44. Reproducibility/version pinning
 
@@ -628,8 +627,9 @@ documents, not publications.
 Stage 2 (cloud smoke test) — pipeline consolidated and pinned, tests green,
 **awaiting the first full real smoke run on Colab**. Real observed so far:
 one T4 GPU session, one successful (persisted) PDL1 control run with **zero
-final accepted designs**, and **zero EGFR trajectories** — per-trajectory
-timing and acceptance rates are `null` until a real run lands. Production
+final accepted designs**, and **zero
+EGFR trajectories** — per-trajectory timing and acceptance rates are not
+known yet; those numbers come from the first real smoke run. Production
 generation (larger batches) is gated on the smoke report being reviewed.
 Status file of record: [STATE.md](STATE.md).
 
@@ -660,12 +660,13 @@ structural compatibility, pH mechanism, PROPKA/protonation/mutational design,
 full-ECD and glycan context, assay construct, final selection — is later
 work, on later evidence. Keep the evidence grades straight:
 `software_test_passed` → `model_run_completed` → `computational_filter_passed`
-→ `experimentally_validated` (always `false` here). Confusing the third for
-the fourth is the exact failure this repo exists to prevent.
+→ `experimentally_validated` (always `false` here). The third is not the
+fourth.
 
-## Problems we actually hit
+## Problems you may hit
 
-Every row below really happened. The last column is the instinct to resist.
+These all happened while building this workflow. The last column is the
+reaction to resist.
 
 | Symptom | Real cause | Correct fix | Wrong reaction |
 |---|---|---|---|
@@ -696,20 +697,17 @@ assay-context QC are therefore required before this design can move anywhere.
 This design passed BindCraft's default filters, but it is still on hold until
 the full-target and assay-context checks are complete.
 
-That is the normal life of a candidate, not a failure story. "On hold" is not
-"failed" — and computed pass is not experimental pass. Internalizing that
-distinction is worth more than any single design this repo will ever
-produce.
+This is a normal candidate state, not a failure story. "On hold" is not
+"failed", and a computational pass is not an experimental pass.
 
 ---
 
 # 中文版完整攻略
 
 这份仓库做一件事：在人 EGFR 上选一段科学上批准过的表位，用免费的
-Google Colab GPU 生成小型 de novo minibinder 候选，然后诚实地审计产出——
+Google Colab GPU 生成小型 de novo minibinder 候选，然后审计产出——
 几何、编号、裁剪伪影，以及计算结果到底能证明什么、不能证明什么。
-它不是营销项目：目前零条 EGFR 轨迹、零个最终 accepted 设计，
-这些"零"会被如实记录，而不是包装成成功。
+目前没有 EGFR 轨迹，也没有最终 accepted 设计。
 
 先说三句最重要的话：
 
@@ -732,47 +730,47 @@ Google Colab GPU 生成小型 de novo minibinder 候选，然后诚实地审计�
 - **一条铁律**：PDL1 对照先跑通，EGFR 才开始。如果 PDL1 这一步都跑不通，
   先别碰 EGFR 的 hotspot。这个时候优先怀疑环境，不是科学设计。
 
-## 流程总览（覆盖范围）
+## 流程总览
 
 ```
 靶标准备（UniProt P00533，PDB 6ARU）
       |
       v
-残基编号映射（已验证）                        [已完成]
+残基编号映射（已验证）
       |
       v
-表位选择（B 包络 390-403 + 421-431，已冻结）  [已完成]
+表位选择（B 包络 390-403 + 421-431，已冻结）
       |
       v
-裁剪小靶标 PDB（Domain III 310-481）          [已完成]
+裁剪小靶标 PDB（Domain III 310-481）
       |
       v
-Colab 环境 + preflight（notebook A-E）        [已完成]
+Colab 环境 + preflight（notebook A-E）
       |
       v
-PDL1 对照（cell G 的门）                      [已完成]
+PDL1 对照（cell G 的门）
       |
       v
-EGFR micro 生成（MPNN + AF2 + 过滤）          [已完成，极小规模]
+EGFR micro 生成（MPNN + AF2 + 过滤）
       |
       v
-几何 + 编号 QC（analyze_bindcraft_run.py）    [已完成]
+几何 + 编号 QC（analyze_bindcraft_run.py）
       |
       v
-完整 ECD 上下文审计                           [已完成]
+完整 ECD 上下文审计
       |
       v
-人/鼠 + pH 机制检查                           [未做——QC 层为 null]
+人/鼠 + pH 机制检查
       |
       v
-短名单 / 最终遴选                             [未做]
+短名单 / 最终遴选
       |
       v
-湿实验                                       [不在本仓库范围]
+湿实验
 ```
 
-本仓库覆盖到"完整 ECD 上下文审计"为止。人/鼠结构层面与 pH 机制是后续
-阶段，现在一律报告 `null`——不猜、不假装。
+本仓库覆盖靶标准备到完整 ECD 上下文审计。人/鼠结构检查、pH 机制、
+最终遴选和湿实验是后续阶段。
 
 ## 从零到 smoke 的最短路线
 
@@ -807,7 +805,7 @@ EGFR micro 生成（MPNN + AF2 + 过滤）          [已完成，极小规模]
 | G 生成 | PDL1 门 → EGFR micro，可恢复 | 失败后乱改配置 | 读 manifest 和日志；PDL1 失败=环境问题 |
 | H 报告 | 读 JSON + py3Dmol 看结构 | 直接相信 accepted | 表位高亮已经过编号映射换算，目检要自己看接触 |
 
-## 我们实际踩过的坑（12 条速查）
+## 可能会踩的坑（12 条速查）
 
 | 症状 | 真实原因 | 正确修法 | 错误反应 |
 |---|---|---|---|
@@ -837,7 +835,7 @@ C 端参与了界面（assay 风险）。所以它必须等完整 ECD 与 assay 
 > This design passed BindCraft's default filters, but it is still on hold
 > until the full-target and assay-context checks are complete.
 
-"on hold"不是"failed"。计算通过 ≠ 实验通过——这个区别比任何单个设计都值钱。
+"on hold" 不是 "failed"。计算通过不等于实验通过。
 
 ## 这个流程能告诉你什么 / 不能告诉你什么
 
@@ -850,7 +848,7 @@ C 端风险旗标、对完整 ECD 的冲突检查。
 pH 7.4 不结合？KD、kon/koff？表达量？湿实验成功率？——统统不能。
 本仓库所有报告里 `experimentally_validated` 恒为 `false`。
 后续才是：人/鼠结构相容性、pH 机制、PROPKA/质子化/突变设计、完整 ECD、
-糖基化、assay 构建、最终遴选。别把计算分数冒充实验事实。
+糖基化、assay 构建、最终遴选。
 
 ## 断点恢复与配额（中文速查）
 
@@ -886,11 +884,6 @@ ProteinMPNN（Dauparas et al. 2022）、PyRosetta、6ARU、UniProt P00533。
 阶段 2（云端 smoke）：流水线已收口并 pin 死，测试全绿，
 **等待第一次完整的真实 smoke run**。目前真实观测：一次 T4 会话、
 一次成功且已持久化的 PDL1 对照 run（**零最终接受**）、**零条 EGFR 轨迹**；
-单轨迹耗时与接受率在真实 run 落地前一律 `null`，不推测。
+单轨迹耗时与接受率要等真实 run 跑完才有数。
 生产规模生成被"smoke 报告经人工复核"这道门挡住。状态以
 [STATE.md](STATE.md) 为准。
-
----
-
-*如果你只记住一句话：这个仓库的每个数字都能追溯到真实执行或明确标注
-`null`——请保持它这个样子。*
