@@ -1,6 +1,6 @@
 # EGFR pH-switch minibinder — a reproducible design workflow
 
-> **中文版完整攻略在本文件底部（搜索「# 中文版完整攻略」）。**
+> **中文版完整攻略在本文件底部。**
 > A complete Chinese version of this guide is at the bottom of this file.
 
 This repo runs one real protein-design pipeline end to end: pick a target
@@ -718,7 +718,7 @@ Google Colab GPU 生成小型 de novo minibinder 候选，然后审计产出—�
 3. **没有 GPU 就不跑生成。** 配额被拒就等配额恢复，绝不降级 CPU。
    这不是固执，是结果可信度问题。
 
-## 十分钟 orientation（中文）
+## 十分钟上手
 
 - **这个仓库在干什么**：准备 EGFR Domain III（310–481，172 个残基）作为
   生成靶标，用 BindCraft 生成 80 aa 的 binder 候选，再用自写脚本审计：
@@ -850,7 +850,7 @@ pH 7.4 不结合？KD、kon/koff？表达量？湿实验成功率？——统统
 后续才是：人/鼠结构相容性、pH 机制、PROPKA/质子化/突变设计、完整 ECD、
 糖基化、assay 构建、最终遴选。
 
-## 断点恢复与配额（中文速查）
+## 断点恢复与配额
 
 - **runtime 被重置**：`/content` 全没，Drive 全在。重连 GPU，重跑 A→G。
   A–D 自动重建环境（10–25 分钟）；F 从缓存秒恢复权重；G 读 manifest，
@@ -861,7 +861,7 @@ pH 7.4 不结合？KD、kon/koff？表达量？湿实验成功率？——统统
   以退出码 2 停止，绝不偷偷用 CPU。正确动作：停，Drive 进度都在，
   等额度恢复（通常一天内），重跑 A→G。
 
-## 复现与版本（中文）
+## 复现与版本
 
 所有可动部分都被 pin：本仓库按 `PROJECT_PIN` 精确 commit 获取；BindCraft
 `7713aa0d0d351e4117a8befeb8541f3a8ebd3368`；ColabDesign
@@ -871,7 +871,7 @@ numpy<2 + flax<0.10；唯一授权补丁见 [patches/PATCHES.md](patches/PATCHES
 [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)。已知限制直说：
 PyRosetta 走季度发布通道，不承诺逐位复现，按 run 记录观察版本。
 
-## 许可与上游（中文）
+## 许可与上游
 
 PyRosetta 需要免费的学术（非商业）许可，确认你的用途符合；AlphaFold2
 参数遵循 DeepMind 使用条款；BindCraft / ColabDesign 按 pin 的上游仓库使用。
@@ -879,7 +879,7 @@ PyRosetta 需要免费的学术（非商业）许可，确认你的用途符合�
 引用请引上游工具：BindCraft、ColabDesign、AlphaFold2（Jumper et al. 2021）、
 ProteinMPNN（Dauparas et al. 2022）、PyRosetta、6ARU、UniProt P00533。
 
-## 当前状态（中文）
+## 当前状态
 
 阶段 2（云端 smoke）：流水线已收口并 pin 死，测试全绿，
 **等待第一次完整的真实 smoke run**。目前真实观测：一次 T4 会话、
