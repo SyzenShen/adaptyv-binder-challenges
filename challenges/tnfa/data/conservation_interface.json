@@ -1,0 +1,1258 @@
+[
+ {
+  "res": 1,
+  "uniprot": 77,
+  "human": "V",
+  "mouse": "L",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 2,
+  "uniprot": 78,
+  "human": "R",
+  "mouse": "R",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 3,
+  "uniprot": 79,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 4,
+  "uniprot": 80,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 5,
+  "uniprot": 81,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 6,
+  "uniprot": 82,
+  "human": "R",
+  "mouse": "Q",
+  "conserved": false,
+  "interface_chains": "AC"
+ },
+ {
+  "res": 7,
+  "uniprot": 83,
+  "human": "T",
+  "mouse": "N",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 8,
+  "uniprot": 84,
+  "human": "P",
+  "mouse": "S",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 9,
+  "uniprot": 85,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 10,
+  "uniprot": 86,
+  "human": "D",
+  "mouse": "D",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 11,
+  "uniprot": 87,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 12,
+  "uniprot": 88,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 13,
+  "uniprot": 89,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 14,
+  "uniprot": 90,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 15,
+  "uniprot": 91,
+  "human": "H",
+  "mouse": "H",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 16,
+  "uniprot": 92,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 17,
+  "uniprot": 93,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 18,
+  "uniprot": 94,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 19,
+  "uniprot": 95,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 20,
+  "uniprot": 96,
+  "human": "P",
+  "mouse": "H",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 21,
+  "uniprot": 97,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 22,
+  "uniprot": 98,
+  "human": "A",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 23,
+  "uniprot": 99,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 24,
+  "uniprot": 100,
+  "human": "G",
+  "mouse": "E",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 25,
+  "uniprot": 101,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 26,
+  "uniprot": 102,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 27,
+  "uniprot": 103,
+  "human": "Q",
+  "mouse": "E",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 28,
+  "uniprot": 104,
+  "human": "W",
+  "mouse": "W",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 29,
+  "uniprot": 105,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 30,
+  "uniprot": 106,
+  "human": "N",
+  "mouse": "S",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 31,
+  "uniprot": 107,
+  "human": "R",
+  "mouse": "Q",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 32,
+  "uniprot": 108,
+  "human": "R",
+  "mouse": "R",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 33,
+  "uniprot": 109,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": "B"
+ },
+ {
+  "res": 34,
+  "uniprot": 110,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 35,
+  "uniprot": 111,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 36,
+  "uniprot": 112,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 37,
+  "uniprot": 113,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 38,
+  "uniprot": 114,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 39,
+  "uniprot": 115,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 40,
+  "uniprot": 116,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 41,
+  "uniprot": 117,
+  "human": "V",
+  "mouse": "M",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 42,
+  "uniprot": 118,
+  "human": "E",
+  "mouse": "D",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 43,
+  "uniprot": 119,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 44,
+  "uniprot": 120,
+  "human": "R",
+  "mouse": "K",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 45,
+  "uniprot": 121,
+  "human": "D",
+  "mouse": "D",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 46,
+  "uniprot": 122,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 47,
+  "uniprot": 123,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 48,
+  "uniprot": 124,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 49,
+  "uniprot": 125,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 50,
+  "uniprot": 126,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 51,
+  "uniprot": 127,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 52,
+  "uniprot": 128,
+  "human": "S",
+  "mouse": "A",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 53,
+  "uniprot": 129,
+  "human": "E",
+  "mouse": "D",
+  "conserved": false,
+  "interface_chains": "AB"
+ },
+ {
+  "res": 54,
+  "uniprot": 130,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 55,
+  "uniprot": 131,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 56,
+  "uniprot": 132,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 57,
+  "uniprot": 133,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 58,
+  "uniprot": 134,
+  "human": "I",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 59,
+  "uniprot": 135,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 60,
+  "uniprot": 136,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 61,
+  "uniprot": 137,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 62,
+  "uniprot": 138,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 63,
+  "uniprot": 139,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 64,
+  "uniprot": 140,
+  "human": "F",
+  "mouse": "F",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 65,
+  "uniprot": 141,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 66,
+  "uniprot": 142,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 67,
+  "uniprot": 143,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 68,
+  "uniprot": 144,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 69,
+  "uniprot": 145,
+  "human": "C",
+  "mouse": "C",
+  "conserved": true,
+  "interface_chains": "BC"
+ },
+ {
+  "res": 70,
+  "uniprot": 146,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 71,
+  "uniprot": 147,
+  "human": "S",
+  "mouse": "-",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 72,
+  "uniprot": 148,
+  "human": "T",
+  "mouse": "D",
+  "conserved": false,
+  "interface_chains": "A"
+ },
+ {
+  "res": 73,
+  "uniprot": 149,
+  "human": "H",
+  "mouse": "Y",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 74,
+  "uniprot": 150,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 75,
+  "uniprot": 151,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 76,
+  "uniprot": 152,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 77,
+  "uniprot": 153,
+  "human": "T",
+  "mouse": "T",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 78,
+  "uniprot": 154,
+  "human": "H",
+  "mouse": "H",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 79,
+  "uniprot": 155,
+  "human": "T",
+  "mouse": "T",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 80,
+  "uniprot": 156,
+  "human": "I",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 81,
+  "uniprot": 157,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 82,
+  "uniprot": 158,
+  "human": "R",
+  "mouse": "R",
+  "conserved": true,
+  "interface_chains": "A"
+ },
+ {
+  "res": 83,
+  "uniprot": 159,
+  "human": "I",
+  "mouse": "F",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 84,
+  "uniprot": 160,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 85,
+  "uniprot": 161,
+  "human": "V",
+  "mouse": "I",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 86,
+  "uniprot": 162,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 87,
+  "uniprot": 163,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": "A"
+ },
+ {
+  "res": 88,
+  "uniprot": 164,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 89,
+  "uniprot": 165,
+  "human": "T",
+  "mouse": "E",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 90,
+  "uniprot": 166,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 91,
+  "uniprot": 167,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": "A"
+ },
+ {
+  "res": 92,
+  "uniprot": 168,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 93,
+  "uniprot": 169,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 94,
+  "uniprot": 170,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 95,
+  "uniprot": 171,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 96,
+  "uniprot": 172,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 97,
+  "uniprot": 173,
+  "human": "I",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 98,
+  "uniprot": 174,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 99,
+  "uniprot": 175,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 100,
+  "uniprot": 176,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": "BC"
+ },
+ {
+  "res": 101,
+  "uniprot": 177,
+  "human": "C",
+  "mouse": "C",
+  "conserved": true,
+  "interface_chains": "AC"
+ },
+ {
+  "res": 102,
+  "uniprot": 178,
+  "human": "Q",
+  "mouse": "P",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 103,
+  "uniprot": 179,
+  "human": "R",
+  "mouse": "K",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 104,
+  "uniprot": 180,
+  "human": "E",
+  "mouse": "D",
+  "conserved": false,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 105,
+  "uniprot": 181,
+  "human": "T",
+  "mouse": "T",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 106,
+  "uniprot": 182,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": "B"
+ },
+ {
+  "res": 107,
+  "uniprot": 183,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 108,
+  "uniprot": 184,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 109,
+  "uniprot": 185,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": "AB"
+ },
+ {
+  "res": 110,
+  "uniprot": 186,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 111,
+  "uniprot": 187,
+  "human": "A",
+  "mouse": "L",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 112,
+  "uniprot": 188,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 113,
+  "uniprot": 189,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 114,
+  "uniprot": 190,
+  "human": "W",
+  "mouse": "W",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 115,
+  "uniprot": 191,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 116,
+  "uniprot": 192,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 117,
+  "uniprot": 193,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 118,
+  "uniprot": 194,
+  "human": "I",
+  "mouse": "I",
+  "conserved": true,
+  "interface_chains": "B"
+ },
+ {
+  "res": 119,
+  "uniprot": 195,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 120,
+  "uniprot": 196,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 121,
+  "uniprot": 197,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 122,
+  "uniprot": 198,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 123,
+  "uniprot": 199,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 124,
+  "uniprot": 200,
+  "human": "F",
+  "mouse": "F",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 125,
+  "uniprot": 201,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 126,
+  "uniprot": 202,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 127,
+  "uniprot": 203,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 128,
+  "uniprot": 204,
+  "human": "K",
+  "mouse": "K",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 129,
+  "uniprot": 205,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 130,
+  "uniprot": 206,
+  "human": "D",
+  "mouse": "D",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 131,
+  "uniprot": 207,
+  "human": "R",
+  "mouse": "Q",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 132,
+  "uniprot": 208,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 133,
+  "uniprot": 209,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 134,
+  "uniprot": 210,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 135,
+  "uniprot": 211,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 136,
+  "uniprot": 212,
+  "human": "I",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 137,
+  "uniprot": 213,
+  "human": "N",
+  "mouse": "N",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 138,
+  "uniprot": 214,
+  "human": "R",
+  "mouse": "L",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 139,
+  "uniprot": 215,
+  "human": "P",
+  "mouse": "P",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 140,
+  "uniprot": 216,
+  "human": "D",
+  "mouse": "K",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 141,
+  "uniprot": 217,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 142,
+  "uniprot": 218,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 143,
+  "uniprot": 219,
+  "human": "D",
+  "mouse": "D",
+  "conserved": true,
+  "interface_chains": "AC"
+ },
+ {
+  "res": 144,
+  "uniprot": 220,
+  "human": "F",
+  "mouse": "F",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 145,
+  "uniprot": 221,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 146,
+  "uniprot": 222,
+  "human": "E",
+  "mouse": "E",
+  "conserved": true,
+  "interface_chains": "A"
+ },
+ {
+  "res": 147,
+  "uniprot": 223,
+  "human": "S",
+  "mouse": "S",
+  "conserved": true,
+  "interface_chains": "BC"
+ },
+ {
+  "res": 148,
+  "uniprot": 224,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 149,
+  "uniprot": 225,
+  "human": "Q",
+  "mouse": "Q",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 150,
+  "uniprot": 226,
+  "human": "V",
+  "mouse": "V",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 151,
+  "uniprot": 227,
+  "human": "Y",
+  "mouse": "Y",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 152,
+  "uniprot": 228,
+  "human": "F",
+  "mouse": "F",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 153,
+  "uniprot": 229,
+  "human": "G",
+  "mouse": "G",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 154,
+  "uniprot": 230,
+  "human": "I",
+  "mouse": "V",
+  "conserved": false,
+  "interface_chains": ""
+ },
+ {
+  "res": 155,
+  "uniprot": 231,
+  "human": "I",
+  "mouse": "I",
+  "conserved": true,
+  "interface_chains": "ABC"
+ },
+ {
+  "res": 156,
+  "uniprot": 232,
+  "human": "A",
+  "mouse": "A",
+  "conserved": true,
+  "interface_chains": ""
+ },
+ {
+  "res": 157,
+  "uniprot": 233,
+  "human": "L",
+  "mouse": "L",
+  "conserved": true,
+  "interface_chains": "ABC"
+ }
+]
