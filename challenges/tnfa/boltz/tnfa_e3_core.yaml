@@ -1,0 +1,18 @@
+entities:
+  - protein:
+      id: X
+      sequence: 70..130
+  - file:
+      path: target_AB.pdb
+      include:
+        - chain:
+            id: B
+        - chain:
+            id: A
+      binding_types:
+        - chain:
+            id: B
+            binding: 16,27,62,108,110,139,141,142
+        - chain:
+            id: A
+            binding: 70,82,86,87

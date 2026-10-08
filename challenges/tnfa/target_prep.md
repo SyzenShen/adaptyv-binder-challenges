@@ -14,3 +14,6 @@ Caveats:
 - Conservation says nothing about whether a binder will cross-react; it only narrows the epitope choice.
 
 Next (P3): choose epitope hotspots (conserved positions at an A/B or B/C junction), then the design setup.
+
+## Correction (P5): 1TNF differs from wild type at residue 143
+1TNF has Leu at 143; UniProt P01375 (the assay construct TNA-H4211) has Asp. All other 151 resolved residues match. D143 is a receptor and adalimumab contact, so designs against 1TNF must be re-checked against the wild-type residue. See `design_plan.md`.
