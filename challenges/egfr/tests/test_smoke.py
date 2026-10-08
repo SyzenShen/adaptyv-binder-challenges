@@ -31,7 +31,6 @@ REQUIRED_FILES = [
     "RUNBOOK.md",
     "configs/competition.json",
     "configs/budget.yaml",
-    ".gitignore",
     ".trae/rules/egfr-project.md",
     "scripts/seqvalidate.py",
 ]
@@ -56,6 +55,10 @@ class ProjectScaffoldTests(unittest.TestCase):
     def test_required_files_exist(self):
         missing = [f for f in REQUIRED_FILES if not os.path.isfile(os.path.join(ROOT, f))]
         self.assertEqual(missing, [])
+
+    def test_repo_gitignore_exists(self):
+        # .gitignore lives at the repository root, two levels above challenges/egfr
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, os.pardir, os.pardir, ".gitignore")))
 
 
 class CompetitionConfigTests(unittest.TestCase):

@@ -1,12 +1,12 @@
 """P2: human vs mouse TNF-alpha conservation on the 1TNF numbering, joined with the trimer interface.
 
-Outputs challenges/tnfa/data/conservation_interface.json and prints a summary.
+Outputs data/conservation_interface.json and prints a summary.
 Alignment: Needleman-Wunsch (identity +1, mismatch -1, gap -2), mouse = UniProt P06804 mature domain.
 """
 import json
 from pathlib import Path
 
-D = Path(__file__).resolve().parents[1] / "challenges" / "tnfa" / "data"
+D = Path(__file__).resolve().parents[1] / "data"
 
 
 def fa(p):

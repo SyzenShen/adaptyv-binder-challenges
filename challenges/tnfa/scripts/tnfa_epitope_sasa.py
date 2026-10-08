@@ -2,14 +2,14 @@
 
 Shrake-Rupley SASA per residue in the trimer and in each isolated chain. A position is a groove/rim candidate if it is
 partly buried by trimerization (dSASA > 10 A^2) and still exposed in the trimer (SASA >= 20 A^2).
-Outputs challenges/tnfa/data/epitope_candidates.json (per chain, with human/mouse conservation).
+Outputs data/epitope_candidates.json (per chain, with human/mouse conservation).
 """
 import json
 from pathlib import Path
 
 import numpy as np
 
-D = Path(__file__).resolve().parents[1] / "challenges" / "tnfa" / "data"
+D = Path(__file__).resolve().parents[1] / "data"
 R = {"C": 1.70, "N": 1.55, "O": 1.52, "S": 1.80}
 PROBE, NPT = 1.4, 400
 

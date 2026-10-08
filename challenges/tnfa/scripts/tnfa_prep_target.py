@@ -1,8 +1,8 @@
 """P2: prepare the TNF-alpha trimer target from 1TNF and map the protomer interfaces.
 
-Inputs : challenges/tnfa/data/1TNF.pdb, P01375.fasta, P06804_mouse.fasta
-Outputs: challenges/tnfa/data/1TNF_ABC_protein.pdb (protein ATOM only, chains A-C)
-         challenges/tnfa/data/interface_residues.json
+Inputs : data/1TNF.pdb, P01375.fasta, P06804_mouse.fasta
+Outputs: data/1TNF_ABC_protein.pdb (protein ATOM only, chains A-C)
+         data/interface_residues.json
 Interface = residue with any heavy atom within 5 A of a different chain (by chain pair).
 """
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-D = Path(__file__).resolve().parents[1] / "challenges" / "tnfa" / "data"
+D = Path(__file__).resolve().parents[1] / "data"
 CUT = 5.0
 AA3 = {"ALA":"A","ARG":"R","ASN":"N","ASP":"D","CYS":"C","GLN":"Q","GLU":"E","GLY":"G","HIS":"H","ILE":"I",
        "LEU":"L","LYS":"K","MET":"M","PHE":"F","PRO":"P","SER":"S","THR":"T","TRP":"W","TYR":"Y","VAL":"V"}
