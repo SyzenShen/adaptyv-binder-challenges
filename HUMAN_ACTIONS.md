@@ -79,3 +79,5 @@ LEGACY_CHECKPOINT 并跳过约 30 分钟的重跑。
 `metadata/`、`logs/`；把这些（或整个文件夹链接）发我。我据此写 Stage 2 smoke 判读
 （环境 vs 靶点故障、B 接触/迁移/边缘、仅按实测吞吐的批次建议）。在此之前 EGFR 生产
 生成、broad hotspot、付费计算一律不启动。
+
+> 2026-10-08: the GitHub repository was renamed from `egfr-binder-challenge` to `adaptyv-binder-challenges`. Entries above keep the original name as written at the time.

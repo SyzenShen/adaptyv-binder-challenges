@@ -29,3 +29,5 @@
 - 确认点 B（阶段 5 中）：3–5 个有结构依据的 pH 改造方案选择（含 H433/432–433 扩展是否启动）。
 - 确认点 C（阶段 6 末）：最终序列、排名、公开材料批准；批准 ID + sequence hash 写入本文件。
 - 阶段 2 smoke 报告复核：是否进入阶段 3 小批次（需实测吞吐数据 + 用户批准）。
+
+> 2026-10-08: the GitHub repository was renamed from `egfr-binder-challenge` to `adaptyv-binder-challenges`. Entries above keep the original name as written at the time.

@@ -87,7 +87,7 @@ notebook [cloud/stage2_bindcraft_smoke.ipynb](cloud/stage2_bindcraft_smoke.ipynb
 ### 7.2 首次运行（用户 A7）
 
 1. 准备 Colab Secret：左栏钥匙图标 → Secrets → 添加 `GITHUB_TOKEN`（对私有仓库
-   `SyzenShen/egfr-binder-challenge` 有读权限的 PAT；notebook 只通过 git header
+   `SyzenShen/adaptyv-binder-challenges` 有读权限的 PAT；notebook 只通过 git header
    使用，绝不打印）。无 token 时 Cell C 支持手工上传仓库快照 tarball 作为 fallback。
 2. Runtime → Change runtime type → **T4 GPU**；上传新版 notebook。
 3. 自上而下运行 **Cell A→H，数字一律不改**：
@@ -146,7 +146,7 @@ orchestrator 不依赖 Colab：把持久根指到本机持久盘，直接运行
 ```bash
 export STAGE2_PERSISTENT_ROOT=/data/bindcraft/stage2_smoke
 /opt/bindcraft_env/bin/python scripts/stage2_orchestrate.py \
-  --repo-dir /path/to/egfr-binder-challenge \
+  --repo-dir /path/to/adaptyv-binder-challenges \
   --bindcraft-dir /opt/bindcraft \
   --bindpy /opt/bindcraft_env/bin/python
 ```

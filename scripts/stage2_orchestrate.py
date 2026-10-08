@@ -2,7 +2,7 @@
 """Stage-2 smoke orchestrator: one reproducible, restart-safe command.
 
     python scripts/stage2_orchestrate.py \
-        --repo-dir /content/egfr-binder-challenge \
+        --repo-dir /content/adaptyv-binder-challenges \
         --bindcraft-dir /content/bindcraft \
         --bindpy /content/bindcraft_env/bin/python
 

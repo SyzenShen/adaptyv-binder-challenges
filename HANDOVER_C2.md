@@ -5,7 +5,7 @@ NOT_AVAILABLE = not reachable from this environment; NEEDS_REVIEW = conflicting 
 
 | Item | Tag | Evidence / note |
 |---|---|---|
-| Repo SyzenShen/egfr-binder-challenge, main @ c4de97c, remote matches (`git ls-remote`) | VERIFIED | working tree clean at takeover |
+| Repo SyzenShen/egfr-binder-challenge (renamed 2026-10-08 to adaptyv-binder-challenges), main @ c4de97c, remote matches (`git ls-remote`) | VERIFIED | working tree clean at takeover |
 | Work branch `claude/funny-maxwell-mfws7z` | VERIFIED | created for Challenge 2 |
 | STATE/RUNBOOK/DECISIONS/HUMAN_ACTIONS/README exist; no CLAUDE.md before this commit | VERIFIED | |
 | Existing tests: 166 passed, 1 skipped, 1 failed (Python 3.13, fresh pip deps) | VERIFIED | failure `test_generator_rebuild_matches_committed_artifact`: committed `data/processed/target_residue_map.json` embeds an absolute macOS path (`/Users/shenyz/...`), so the rebuild differs on any other machine. Environment artifact, not a science error. Not fixed yet (low priority). |

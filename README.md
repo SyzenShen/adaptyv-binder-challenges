@@ -166,8 +166,8 @@ Strictly optional — you can run everything from the browser. If you want to
 run the local tests or the offline analysis scripts:
 
 ```bash
-git clone https://github.com/SyzenShen/egfr-binder-challenge.git
-cd egfr-binder-challenge
+git clone https://github.com/SyzenShen/adaptyv-binder-challenges.git
+cd adaptyv-binder-challenges
 python3 -m unittest discover -s tests -v   # zero third-party dependencies
 ```
 

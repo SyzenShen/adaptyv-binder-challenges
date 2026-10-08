@@ -200,7 +200,7 @@ class TestThinNotebook(unittest.TestCase):
         self.assertLess(project, env)
 
     def test_private_project_pinned_and_token_never_printed(self):
-        self.assertIn("SyzenShen/egfr-binder-challenge.git", self.text)
+        self.assertIn("SyzenShen/adaptyv-binder-challenges.git", self.text)
         self.assertIn("userdata.get('GITHUB_TOKEN')", self.text)
         self.assertIn("http.extraheader=AUTHORIZATION: bearer {token}",
                       self.text)
