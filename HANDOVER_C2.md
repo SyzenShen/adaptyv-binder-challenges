@@ -15,8 +15,8 @@ NOT_AVAILABLE = not reachable from this environment; NEEDS_REVIEW = conflicting 
 | Colab T4 15 GiB measured | USER_REPORTED (recorded in STATE.md) | |
 | EGFR_H433_submission.zip, 120 reviewed / 20 selected, 225-residue crop | NOT_AVAILABLE | no zip in repo. This is the supervisor's package, not the user's own run. Submission success unconfirmed without a receipt. |
 | Any wet-lab data | NOT_AVAILABLE | `experimentally_validated = false`; unknown metrics are null |
-| Challenge 2 official pages | NOT_AVAILABLE | proteinbase.com blocked by the cloud egress proxy (HTTP 403 on CONNECT) |
-| UniProt P01375 / RCSB 1TNF download | NOT_AVAILABLE | rest.uniprot.org, files.rcsb.org blocked likewise |
+| Challenge 2 official pages | VERIFIED (2026-10-08, after network policy set to Full) | snapshot in `challenges/tnfa/data/`; summary in `challenges/tnfa/rules_and_assay.md` |
+| UniProt P01375 / RCSB 1TNF download | VERIFIED | P01375 77-233 equals the page sequence; 1TNF has chains A, B, C (152 CA each, 157-residue SEQRES) |
 | LinkedIn / X announcements | NOT_AVAILABLE | not attempted (login-gated, and egress restricted) |
 
 ## Time warning
