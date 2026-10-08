@@ -1,0 +1,218 @@
+{
+ "receptor_structure": "7KP7 (mouse TNF + human TNFR1)",
+ "receptor_chain": "E",
+ "rmsd_to_1TNF_A": 0.97,
+ "map": {
+  "main": "B",
+  "other": "A"
+ },
+ "residues": {
+  "main_chain_B": [
+   {
+    "res": 21,
+    "aa_mouse_struct": "Q",
+    "human": "Q",
+    "mouse": "Q",
+    "conserved": true
+   },
+   {
+    "res": 32,
+    "aa_mouse_struct": "R",
+    "human": "R",
+    "mouse": "R",
+    "conserved": true
+   },
+   {
+    "res": 33,
+    "aa_mouse_struct": "A",
+    "human": "A",
+    "mouse": "A",
+    "conserved": true
+   },
+   {
+    "res": 65,
+    "aa_mouse_struct": "K",
+    "human": "K",
+    "mouse": "K",
+    "conserved": true
+   },
+   {
+    "res": 66,
+    "aa_mouse_struct": "G",
+    "human": "G",
+    "mouse": "G",
+    "conserved": true
+   },
+   {
+    "res": 67,
+    "aa_mouse_struct": "Q",
+    "human": "Q",
+    "mouse": "Q",
+    "conserved": true
+   },
+   {
+    "res": 110,
+    "aa_mouse_struct": "E",
+    "human": "E",
+    "mouse": "E",
+    "conserved": true
+   },
+   {
+    "res": 113,
+    "aa_mouse_struct": "P",
+    "human": "P",
+    "mouse": "P",
+    "conserved": true
+   },
+   {
+    "res": 115,
+    "aa_mouse_struct": "Y",
+    "human": "Y",
+    "mouse": "Y",
+    "conserved": true
+   },
+   {
+    "res": 143,
+    "aa_mouse_struct": "D",
+    "human": "D",
+    "mouse": "D",
+    "conserved": true
+   },
+   {
+    "res": 144,
+    "aa_mouse_struct": "F",
+    "human": "F",
+    "mouse": "F",
+    "conserved": true
+   },
+   {
+    "res": 145,
+    "aa_mouse_struct": "A",
+    "human": "A",
+    "mouse": "A",
+    "conserved": true
+   },
+   {
+    "res": 146,
+    "aa_mouse_struct": "E",
+    "human": "E",
+    "mouse": "E",
+    "conserved": true
+   },
+   {
+    "res": 147,
+    "aa_mouse_struct": "S",
+    "human": "S",
+    "mouse": "S",
+    "conserved": true
+   },
+   {
+    "res": 149,
+    "aa_mouse_struct": "Q",
+    "human": "Q",
+    "mouse": "Q",
+    "conserved": true
+   }
+  ],
+  "other_chain_A": [
+   {
+    "res": 74,
+    "aa_mouse_struct": "V",
+    "human": "V",
+    "mouse": "V",
+    "conserved": true
+   },
+   {
+    "res": 75,
+    "aa_mouse_struct": "L",
+    "human": "L",
+    "mouse": "L",
+    "conserved": true
+   },
+   {
+    "res": 77,
+    "aa_mouse_struct": "T",
+    "human": "T",
+    "mouse": "T",
+    "conserved": true
+   },
+   {
+    "res": 82,
+    "aa_mouse_struct": "R",
+    "human": "R",
+    "mouse": "R",
+    "conserved": true
+   },
+   {
+    "res": 86,
+    "aa_mouse_struct": "S",
+    "human": "S",
+    "mouse": "S",
+    "conserved": true
+   },
+   {
+    "res": 87,
+    "aa_mouse_struct": "Y",
+    "human": "Y",
+    "mouse": "Y",
+    "conserved": true
+   },
+   {
+    "res": 88,
+    "aa_mouse_struct": "Q",
+    "human": "Q",
+    "mouse": "Q",
+    "conserved": true
+   },
+   {
+    "res": 90,
+    "aa_mouse_struct": "K",
+    "human": "K",
+    "mouse": "K",
+    "conserved": true
+   },
+   {
+    "res": 91,
+    "aa_mouse_struct": "V",
+    "human": "V",
+    "mouse": "V",
+    "conserved": true
+   },
+   {
+    "res": 92,
+    "aa_mouse_struct": "N",
+    "human": "N",
+    "mouse": "N",
+    "conserved": true
+   },
+   {
+    "res": 125,
+    "aa_mouse_struct": "Q",
+    "human": "Q",
+    "mouse": "Q",
+    "conserved": true
+   },
+   {
+    "res": 127,
+    "aa_mouse_struct": "E",
+    "human": "E",
+    "mouse": "E",
+    "conserved": true
+   },
+   {
+    "res": 135,
+    "aa_mouse_struct": "E",
+    "human": "E",
+    "mouse": "E",
+    "conserved": true
+   },
+   {
+    "res": 137,
+    "aa_mouse_struct": "N",
+    "human": "N",
+    "mouse": "N",
+    "conserved": true
+   }
+  ]
+ }
+}
