@@ -1,0 +1,587 @@
+{
+ "rule": "dSASA>10 and trimer SASA>=20 (A^2)",
+ "chains": {
+  "A": [
+   {
+    "res": 6,
+    "aa": "R",
+    "mouse": "Q",
+    "conserved": false,
+    "sasa_trimer": 88.3,
+    "dsasa": 36.7
+   },
+   {
+    "res": 8,
+    "aa": "P",
+    "mouse": "S",
+    "conserved": false,
+    "sasa_trimer": 32.8,
+    "dsasa": 73.2
+   },
+   {
+    "res": 9,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 51.4,
+    "dsasa": 20.3
+   },
+   {
+    "res": 11,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 66.4,
+    "dsasa": 12.1
+   },
+   {
+    "res": 34,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 24.9,
+    "dsasa": 77.6
+   },
+   {
+    "res": 36,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 24.8,
+    "dsasa": 26.9
+   },
+   {
+    "res": 53,
+    "aa": "E",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 109.6,
+    "dsasa": 29.2
+   },
+   {
+    "res": 72,
+    "aa": "T",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 73.7,
+    "dsasa": 32.4
+   },
+   {
+    "res": 73,
+    "aa": "H",
+    "mouse": "Y",
+    "conserved": false,
+    "sasa_trimer": 49.5,
+    "dsasa": 50.7
+   },
+   {
+    "res": 75,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 46.1,
+    "dsasa": 25.4
+   },
+   {
+    "res": 87,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 103.8,
+    "dsasa": 35.9
+   },
+   {
+    "res": 91,
+    "aa": "V",
+    "mouse": "V",
+    "conserved": true,
+    "sasa_trimer": 42.3,
+    "dsasa": 19.9
+   },
+   {
+    "res": 92,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 48.7,
+    "dsasa": 43.9
+   },
+   {
+    "res": 97,
+    "aa": "I",
+    "mouse": "V",
+    "conserved": false,
+    "sasa_trimer": 30.8,
+    "dsasa": 86.6
+   },
+   {
+    "res": 102,
+    "aa": "Q",
+    "mouse": "P",
+    "conserved": false,
+    "sasa_trimer": 39.6,
+    "dsasa": 116.3
+   },
+   {
+    "res": 103,
+    "aa": "R",
+    "mouse": "K",
+    "conserved": false,
+    "sasa_trimer": 94.1,
+    "dsasa": 110.4
+   },
+   {
+    "res": 104,
+    "aa": "E",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 61.2,
+    "dsasa": 64.4
+   },
+   {
+    "res": 109,
+    "aa": "A",
+    "mouse": "A",
+    "conserved": true,
+    "sasa_trimer": 60.3,
+    "dsasa": 18.4
+   },
+   {
+    "res": 112,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 43.7,
+    "dsasa": 87.2
+   },
+   {
+    "res": 113,
+    "aa": "P",
+    "mouse": "P",
+    "conserved": true,
+    "sasa_trimer": 40.7,
+    "dsasa": 37.9
+   },
+   {
+    "res": 115,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 53.1,
+    "dsasa": 87.5
+   },
+   {
+    "res": 116,
+    "aa": "E",
+    "mouse": "E",
+    "conserved": true,
+    "sasa_trimer": 26.8,
+    "dsasa": 14.7
+   },
+   {
+    "res": 117,
+    "aa": "P",
+    "mouse": "P",
+    "conserved": true,
+    "sasa_trimer": 21.9,
+    "dsasa": 51.0
+   },
+   {
+    "res": 119,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 29.2,
+    "dsasa": 107.0
+   },
+   {
+    "res": 125,
+    "aa": "Q",
+    "mouse": "Q",
+    "conserved": true,
+    "sasa_trimer": 77.1,
+    "dsasa": 25.8
+   },
+   {
+    "res": 146,
+    "aa": "E",
+    "mouse": "E",
+    "conserved": true,
+    "sasa_trimer": 50.2,
+    "dsasa": 34.7
+   },
+   {
+    "res": 157,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 36.0,
+    "dsasa": 89.0
+   }
+  ],
+  "B": [
+   {
+    "res": 7,
+    "aa": "T",
+    "mouse": "N",
+    "conserved": false,
+    "sasa_trimer": 112.9,
+    "dsasa": 19.8
+   },
+   {
+    "res": 8,
+    "aa": "P",
+    "mouse": "S",
+    "conserved": false,
+    "sasa_trimer": 93.9,
+    "dsasa": 28.3
+   },
+   {
+    "res": 9,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 45.6,
+    "dsasa": 23.9
+   },
+   {
+    "res": 11,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 58.9,
+    "dsasa": 27.7
+   },
+   {
+    "res": 33,
+    "aa": "A",
+    "mouse": "A",
+    "conserved": true,
+    "sasa_trimer": 57.9,
+    "dsasa": 34.4
+   },
+   {
+    "res": 34,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 37.4,
+    "dsasa": 97.9
+   },
+   {
+    "res": 36,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 32.3,
+    "dsasa": 66.7
+   },
+   {
+    "res": 53,
+    "aa": "E",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 107.9,
+    "dsasa": 19.4
+   },
+   {
+    "res": 73,
+    "aa": "H",
+    "mouse": "Y",
+    "conserved": false,
+    "sasa_trimer": 43.9,
+    "dsasa": 44.5
+   },
+   {
+    "res": 75,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 53.7,
+    "dsasa": 24.2
+   },
+   {
+    "res": 92,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 76.2,
+    "dsasa": 22.7
+   },
+   {
+    "res": 97,
+    "aa": "I",
+    "mouse": "V",
+    "conserved": false,
+    "sasa_trimer": 29.3,
+    "dsasa": 87.1
+   },
+   {
+    "res": 102,
+    "aa": "Q",
+    "mouse": "P",
+    "conserved": false,
+    "sasa_trimer": 42.3,
+    "dsasa": 100.2
+   },
+   {
+    "res": 103,
+    "aa": "R",
+    "mouse": "K",
+    "conserved": false,
+    "sasa_trimer": 161.4,
+    "dsasa": 27.7
+   },
+   {
+    "res": 104,
+    "aa": "E",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 33.0,
+    "dsasa": 66.7
+   },
+   {
+    "res": 109,
+    "aa": "A",
+    "mouse": "A",
+    "conserved": true,
+    "sasa_trimer": 44.3,
+    "dsasa": 21.1
+   },
+   {
+    "res": 112,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 52.3,
+    "dsasa": 91.5
+   },
+   {
+    "res": 113,
+    "aa": "P",
+    "mouse": "P",
+    "conserved": true,
+    "sasa_trimer": 41.4,
+    "dsasa": 33.9
+   },
+   {
+    "res": 115,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 38.9,
+    "dsasa": 90.1
+   },
+   {
+    "res": 116,
+    "aa": "E",
+    "mouse": "E",
+    "conserved": true,
+    "sasa_trimer": 20.5,
+    "dsasa": 11.5
+   },
+   {
+    "res": 119,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 31.8,
+    "dsasa": 92.8
+   },
+   {
+    "res": 125,
+    "aa": "Q",
+    "mouse": "Q",
+    "conserved": true,
+    "sasa_trimer": 28.9,
+    "dsasa": 70.7
+   },
+   {
+    "res": 147,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 41.5,
+    "dsasa": 49.2
+   },
+   {
+    "res": 157,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 27.3,
+    "dsasa": 117.0
+   }
+  ],
+  "C": [
+   {
+    "res": 6,
+    "aa": "R",
+    "mouse": "Q",
+    "conserved": false,
+    "sasa_trimer": 48.5,
+    "dsasa": 34.7
+   },
+   {
+    "res": 8,
+    "aa": "P",
+    "mouse": "S",
+    "conserved": false,
+    "sasa_trimer": 49.1,
+    "dsasa": 51.7
+   },
+   {
+    "res": 9,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 35.6,
+    "dsasa": 49.7
+   },
+   {
+    "res": 11,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 46.2,
+    "dsasa": 22.3
+   },
+   {
+    "res": 33,
+    "aa": "A",
+    "mouse": "A",
+    "conserved": true,
+    "sasa_trimer": 100.8,
+    "dsasa": 11.2
+   },
+   {
+    "res": 34,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 22.9,
+    "dsasa": 68.8
+   },
+   {
+    "res": 73,
+    "aa": "H",
+    "mouse": "Y",
+    "conserved": false,
+    "sasa_trimer": 45.8,
+    "dsasa": 53.5
+   },
+   {
+    "res": 75,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 61.4,
+    "dsasa": 16.0
+   },
+   {
+    "res": 92,
+    "aa": "N",
+    "mouse": "N",
+    "conserved": true,
+    "sasa_trimer": 89.2,
+    "dsasa": 11.4
+   },
+   {
+    "res": 97,
+    "aa": "I",
+    "mouse": "V",
+    "conserved": false,
+    "sasa_trimer": 25.5,
+    "dsasa": 105.3
+   },
+   {
+    "res": 99,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 29.0,
+    "dsasa": 33.7
+   },
+   {
+    "res": 102,
+    "aa": "Q",
+    "mouse": "P",
+    "conserved": false,
+    "sasa_trimer": 42.2,
+    "dsasa": 114.3
+   },
+   {
+    "res": 103,
+    "aa": "R",
+    "mouse": "K",
+    "conserved": false,
+    "sasa_trimer": 155.8,
+    "dsasa": 61.5
+   },
+   {
+    "res": 104,
+    "aa": "E",
+    "mouse": "D",
+    "conserved": false,
+    "sasa_trimer": 67.0,
+    "dsasa": 52.4
+   },
+   {
+    "res": 112,
+    "aa": "K",
+    "mouse": "K",
+    "conserved": true,
+    "sasa_trimer": 59.0,
+    "dsasa": 56.8
+   },
+   {
+    "res": 113,
+    "aa": "P",
+    "mouse": "P",
+    "conserved": true,
+    "sasa_trimer": 43.5,
+    "dsasa": 36.0
+   },
+   {
+    "res": 115,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 34.1,
+    "dsasa": 92.2
+   },
+   {
+    "res": 116,
+    "aa": "E",
+    "mouse": "E",
+    "conserved": true,
+    "sasa_trimer": 24.6,
+    "dsasa": 10.7
+   },
+   {
+    "res": 119,
+    "aa": "Y",
+    "mouse": "Y",
+    "conserved": true,
+    "sasa_trimer": 35.0,
+    "dsasa": 90.4
+   },
+   {
+    "res": 147,
+    "aa": "S",
+    "mouse": "S",
+    "conserved": true,
+    "sasa_trimer": 26.5,
+    "dsasa": 39.6
+   },
+   {
+    "res": 157,
+    "aa": "L",
+    "mouse": "L",
+    "conserved": true,
+    "sasa_trimer": 35.8,
+    "dsasa": 106.3
+   }
+  ]
+ }
+}
