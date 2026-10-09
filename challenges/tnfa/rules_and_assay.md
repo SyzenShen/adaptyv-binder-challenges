@@ -32,3 +32,21 @@ Design consequences (COMPUTED, for P2):
 - The target is a trimer, so avidity may mask pH sensitivity; the assay format is NOT_STATED.
 
 Do not carry over from Challenge 1: HEK293 glycosylation claims, MES/HEPES recipe, tag, orientation, KD-shift tolerance.
+
+## Additional information reported by the user from the participant group (2026-10-09)
+Not on the official page snapshot in `data/`; tag USER_REPORTED until confirmed on the page or by organizers. Applies to "both rounds".
+
+| Item | Value | Tag |
+|---|---|---|
+| Candidate selection (Tracks 2/3) | Claude helps select designs for the wet lab; considers design method, sequence diversity and some in silico metrics, not a single metric such as ipTM. The prompt and Claude's evaluation report are published after the competition. Page FAQ 8 agrees in part (selection by Claude, undisclosed prompt, method novelty considered) | USER_REPORTED, partly consistent with VERIFIED FAQ 8 |
+| Expression / purification | same system for all binders; C-terminal Twin-Strep tag | USER_REPORTED |
+| SPR geometry | binder immobilized, target flowed as analyte. Target constructs (and tags) can differ between challenges | USER_REPORTED |
+| Methodology field | "Describe your methodology" is read by Claude for selection and later linked to the Proteinbase Collection, so design rationale, mechanism hypothesis and filtering basis matter | USER_REPORTED (page FAQ 5/17 say methods are used and made public) |
+| Format | de novo single-chain binders are allowed, nanobody/scFv/Fab not required | USER_REPORTED; page FAQ 1 agrees (VERIFIED) |
+| PyRosetta | allowed, non-commercial use acknowledged; participants must follow the license | USER_REPORTED; page FAQ 15 says commercial tools need an owned license (VERIFIED) |
+
+Not carried over: the Challenge 1 notes pasted with this message (novelty Level 3, EGFR HEK293 glycosylation, MES at pH 6.5, 1 uM analyte) are Challenge 1 only. The C2 page says pH 6.0, not 6.5.
+
+Consequences for the design (COMPUTED reasoning, not measured):
+- Immobilized binder + trimeric TNF analyte means avidity: one TNF trimer can rebind several immobilized binders, which slows apparent dissociation. A pH switch that only weakens binding modestly may still show binding at pH 6.0. The off-state must be strong, and ranking should favor designs whose interface loses several contacts at once, not one.
+- The Twin-Strep tag is on the C-terminus of the binder, so the C-terminus must stay solvent-exposed and away from the target. Submitted sequences are assumed to be given without the tag (the page says nothing about it).
