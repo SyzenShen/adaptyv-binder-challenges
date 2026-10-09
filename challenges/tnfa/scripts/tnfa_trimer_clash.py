@@ -3,7 +3,7 @@
 Usage: python3 -I scripts/tnfa_trimer_clash.py complex.pdb --target-chains B A --binder-chain X
 The target chains of the design complex are superposed (CA Kabsch, matched by residue order) onto 1TNF chains B and A, the
 same transform is applied to the binder, and binder heavy atoms closer than 2.5 A to 1TNF chain C are counted.
-Also reports binder atoms within 4 A of residue 143 (1TNF has Leu where wild type has Asp).
+Also reports the distance of the binder's last 5 residues to the target (the C-terminus carries the Twin-Strep tag in the assay and must stay free) and binder atoms within 4 A of residue 143 (1TNF has Leu where wild type has Asp).
 """
 import argparse
 import sys
@@ -47,7 +47,10 @@ def trimer_clash(complex_pdb, target_chains, binder_chain, ref_pdb=None, cutoff=
     dmin = np.linalg.norm(binder[:, None, :] - third[None, :, :], axis=2)
     l143 = np.array([a[2] for a in ref["B"] + ref["A"] if a[0] == 143])
     d143 = np.linalg.norm(binder[:, None, :] - l143[None, :, :], axis=2).min() if len(l143) else float("nan")
-    return {"clash_atoms_with_chain_C": int((dmin < cutoff).sum()), "min_dist_to_C": float(dmin.min()),
+    cterm = np.array([a[2] for a in cx[binder_chain] if a[0] >= max(x[0] for x in cx[binder_chain]) - 4])
+    tgt = np.array([a[2] for c in target_chains for a in cx[c]])
+    d_cterm = float(np.linalg.norm(cterm[:, None, :] - tgt[None, :, :], axis=2).min())
+    return {"cterm_min_dist_to_target": d_cterm, "clash_atoms_with_chain_C": int((dmin < cutoff).sum()), "min_dist_to_C": float(dmin.min()),
             "min_dist_to_res143": float(d143)}
 
 
