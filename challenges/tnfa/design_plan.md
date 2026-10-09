@@ -18,11 +18,12 @@ BoltzGen 0.3.2 (PyPI wheel, `boltzgen run`, `protein-anything` protocol) instead
 
 ## After the run (CPU only, on files you upload)
 1. Take the BoltzGen final ranked designs (budget 40).
-2. `scripts/tnfa_trimer_clash.py`: binder must not collide with the third protomer (clash atoms = 0) and should stay away from residue 143 unless the contact does not depend on its side chain.
+2. `scripts/tnfa_trimer_clash.py`: binder must not collide with the third protomer (clash atoms = 0), and its C-terminus (Twin-Strep tag site) must stay clear of the target (`cterm_min_dist_to_target`, require a clear margin, for example above 8 A) and should stay away from residue 143 unless the contact does not depend on its side chain.
 3. Re-fold the top designs against the wild-type target (Asp at 143) with BoltzGen's fold step or Boltz-2 and compare interface scores; drop designs that lose binding.
 4. Mouse: refold the same designs against P06804 80-235 (all hotspots are conserved) and keep those that still score.
 5. pH: hypothesis only. Rank by histidines at the interface facing the conserved acidic/aromatic residues (E110, E146, D143, Y115); optionally add His variants of strong designs and re-score the neutral complex. No tool here can predict a pH switch, so no claim is made until the assay.
-6. Order the CSV (`name,sequence,molecule_class=protein`), top = best, at most 20 rows for Track 3, with a methods note. Submission itself is the user's action.
+6. Diversity matters for selection (user report: Claude weighs method, sequence diversity and several metrics): cluster the passing designs and submit representatives of different clusters, not 20 near-duplicates. Fill `methodology_draft.md` with real numbers only.
+7. Order the CSV (`name,sequence,molecule_class=protein`), top = best, at most 20 rows for Track 3, with a methods note. Submission itself is the user's action.
 
 ## Known risks
 - T4 may be too slow or run out of memory with 314 target tokens + 130 binder tokens; fallback: `--diffusion_batch_size` smaller, then target only the core hotspots with a shorter binder (70-100).
