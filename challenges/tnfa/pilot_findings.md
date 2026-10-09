@@ -27,3 +27,18 @@ Competition rules (page FAQ 8): designs must be de novo and zero-shot, with adeq
 2. Use residue constraints to limit low-complexity (for example cap Gly/Ala).
 3. Run the `nanobody-anything` protocol deliberately and submit as `nanobody` with CDR diversity, if the rules allow it for this challenge.
 4. A second model (BindCraft path) for diversity.
+
+## Final pilot result (all 6 BoltzGen steps finished; read from Drive `all_designs_metrics.csv`, 24 rows)
+Wall time 10150 s = 423 s per design on a T4: design 3881 s, inverse folding 66 s, **folding 5323 s (222 s per design, the largest cost)**, design_folding 747 s, analysis 99 s, filtering 27 s.
+
+Filters (BoltzGen defaults): refold-vs-design RMSD under 2.5 A passed by 1 of 24; design RMSD 11; design-folding RMSD 15; Ala fraction 22, Gly fraction 22. **Only 1 design passed all filters** (id `04`, a 77-residue helical sequence). BoltzGen then ranked 8 final + 10 more designs by relaxing.
+
+Binding confidence of the refolded complex (Boltz-2 inside BoltzGen), min / median / max over the 24:
+- design-to-target ipTM: 0.11 / 0.15 / 0.30
+- ipSAE (design_ipsae_min): 0.00 / 0.00 / 0.00
+- min design-to-target PAE: 13.9 / 19.3 / 23.2 A
+- Even the one design that passed all filters (rank 1, id 04) has ipTM 0.28, min PAE 14.5 A, ipSAE 0.00.
+- The `designfolding-*` interface columns are placeholders (ipTM 0, PAE 100000) because that step folds the binder alone; only its RMSD columns mean something.
+For comparison, the Anthropic technical report scores designs by ipSAE and reports target-averaged medians around 0.74-0.79 and best designs around 0.81-0.83 (single H200, 24 h).
+
+Conclusion (COMPUTED from these numbers): none of the 24 designs has credible predicted binding to the target. Possible reasons, none tested: 24 designs is far below BoltzGen's default of 10,000; 12 forced contacts across two protomers is a hard specification; bf16 on a T4 (no native bf16); refolding without target MSA or templates may lower all confidences.
