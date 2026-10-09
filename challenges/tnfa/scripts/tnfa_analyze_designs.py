@@ -54,6 +54,8 @@ def read_cif(path):
             continue
         if r[ix.get("type_symbol", ix["label_atom_id"])] == "H":
             continue
+        if abs(float(r[ix["Cartn_x"]])) + abs(float(r[ix["Cartn_y"]])) + abs(float(r[ix["Cartn_z"]])) < 1e-3:
+            continue  # BoltzGen writes atoms it did not generate at exactly (0, 0, 0); they are not real coordinates
         c = r[ix[chain_key]]
         rid = r[ix["label_seq_id"]] if "label_seq_id" in ix and r[ix["label_seq_id"]] != "." else r[ix["auth_seq_id"]]
         seen.setdefault(c, {})
