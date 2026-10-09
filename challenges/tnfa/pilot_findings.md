@@ -10,7 +10,7 @@ Date 2026-10-09. Raw `intermediate_designs_inverse_folded` output, before BoltzG
 BoltzGen writes ungenerated atoms at (0, 0, 0): 403 of 3229 atoms in design 00. Any distance analysis must drop them; before the fix every design appeared to have its C-terminus 1-3 A from the target, which was an artifact. Side-chain coordinates in these intermediate files are incomplete, so interface histidine counts from them are unreliable. Use the refolded complexes for that.
 
 ## What the sequences look like (rough classification by sequence motifs, not ANARCI)
-- 9 of 24 carry antibody-like framework motifs (heavy-chain FR4 `WGQGT`: 5; light-chain FR4 `FGxGTK`: 6, some overlap not counted twice in the table by hand): these would be read as nanobody/antibody-like designs, not de novo mini-proteins.
+- 9 of 24 carry antibody-like framework motifs by regex: heavy-chain FR4 `WGQGT` in 5 (00, 03, 14, 15, 21) and light-chain FR4 `FGxGTK` in 4 (01, 02, 05, 07). By eye 18, 19 and 22 also look like light-chain variable domains, and 12 and 13 like heavy-chain ones, so the real count is higher (ANARCI not run). These would be read as nanobody/antibody-like designs, not de novo mini-proteins.
 - 2 of 24 are 91% and 96% identical to human ubiquitin (identity against a reference typed from memory; confirm before relying on it). This is a natural protein, not a de novo design.
 - 3 of 24 are low-complexity (poly-Ala/Gly-rich, Shannon entropy 1.3-2.8 bits).
 - The remaining 10 include helical bundle-like and Ig/fibronectin-like sequences.
@@ -19,7 +19,7 @@ Competition rules (page FAQ 8): designs must be de novo and zero-shot, with adeq
 ## Geometry (after dropping (0,0,0) atoms)
 - 22 of 24 binders touch both protomers; design 07 and 11 touch only one.
 - Hotspots touched out of 12 range from 2 to 12; 12 designs touch 10 or more (several of the low-complexity ones touch all 12).
-- No design collides with the third protomer (0 atoms within 2.5 A). C-terminus to target distance: 2.4-21 A; 5 designs have it under 3 A (07 not, 11, 12, 16, 20) and would block the Twin-Strep tag position.
+- No design collides with the third protomer (0 atoms within 2.5 A). C-terminus to target distance: 2.4-21 A; 4 designs have it under 3 A (11, 12, 16, 20) and would block the Twin-Strep tag position.
 - Nothing here says a design binds or switches with pH.
 
 ## Options if the final filtered set stays dominated by antibody-like / ubiquitin-like / low-complexity sequences (not yet tried)
