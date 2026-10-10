@@ -1,0 +1,21 @@
+entities:
+  - protein:
+      id: X
+      sequence: 80
+      secondary_structure:
+        helix: 3..22,27..48,53..77
+        loop: 23..26,49..52
+  - file:
+      path: target_AB.pdb
+      include:
+        - chain:
+            id: B
+        - chain:
+            id: A
+      binding_types:
+        - chain:
+            id: B
+            binding: 110,142
+        - chain:
+            id: A
+            binding: 82,86

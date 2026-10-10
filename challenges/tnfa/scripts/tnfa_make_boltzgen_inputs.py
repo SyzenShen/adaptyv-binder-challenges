@@ -18,6 +18,11 @@ CORE = {"main": [21, 32, 67, 113, 115, 144, 146, 147], "other": [75, 87, 91, 92]
 # 1TNF carries Leu at 143 where wild-type P01375 (the assay construct) has Asp. D143 is a receptor and adalimumab contact,
 # so it is never used as a hotspot and designs must be re-checked against the wild-type sequence.
 KNOWN_VARIANT = {143: ("L", "D")}
+# relaxed variant after the pilot: only 4 hotspots (2 per protomer, aromatic centre of the site) instead of 12
+MIN = {"main": [115, 147], "other": [87, 91]}
+# EXPERIMENTAL helical-bundle variant: fixed length 80, three helices; the secondary_structure syntax follows BoltzGen's schema
+# but has not been run. `boltzgen check` (notebook cell D) validates it before any GPU time is used.
+HELICAL_SS = "      secondary_structure:\n        helix: 3..22,27..48,53..77\n        loop: 23..26,49..52"
 
 
 def main():
@@ -56,12 +61,13 @@ def main():
             "other": [int(k) for k in {r["res"] for r in site["residues"][f"other_chain_{other_c}"]}]}
     wide = {k: [n for n in sorted(v) if n not in KNOWN_VARIANT and n in order[main_c if k == "main" else other_c]]
             for k, v in wide.items()}
-    for name, sel in (("tnfa_e3_core", CORE), ("tnfa_e3_wide", wide)):
+    for name, sel, length, ss in (("tnfa_e3_core", CORE, "70..130", ""), ("tnfa_e3_wide", wide, "70..130", ""),
+                                  ("tnfa_e3_min", MIN, "70..130", ""), ("tnfa_e3_min_helical", MIN, "80", HELICAL_SS + "\n")):
         y = f"""entities:
   - protein:
       id: X
-      sequence: 70..130
-  - file:
+      sequence: {length}
+{ss}  - file:
       path: target_AB.pdb
       include:
         - chain:
