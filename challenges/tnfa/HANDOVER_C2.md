@@ -23,3 +23,7 @@ NOT_AVAILABLE = not reachable from this environment; NEEDS_REVIEW = conflicting 
 Handover says the Challenge 2 page deadline is 2026-10-11 23:59 AoE. That is UTC-12, i.e. 2026-10-12 11:59 UTC
 = 2026-10-12 13:59 Europe/Berlin (CEST, UTC+2). Today is 2026-10-08. Roughly 3.5 days remain; this is USER_REPORTED
 and must be re-read from the official page.
+
+
+## Update 2026-10-10
+Deadline: a 2-day extension was agreed in Slack by Anthropic and Adaptyv staff on 2026-10-09 (not yet seen as an official announcement). See `rules_and_assay.md`, section "Confirmed by organizers in the Proteinbase Slack". Slack is connected read-only for this project; nothing was posted.

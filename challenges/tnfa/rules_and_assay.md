@@ -50,3 +50,25 @@ Not carried over: the Challenge 1 notes pasted with this message (novelty Level 
 Consequences for the design (COMPUTED reasoning, not measured):
 - Immobilized binder + trimeric TNF analyte means avidity: one TNF trimer can rebind several immobilized binders, which slows apparent dissociation. A pH switch that only weakens binding modestly may still show binding at pH 6.0. The off-state must be strong, and ranking should favor designs whose interface loses several contacts at once, not one.
 - The Twin-Strep tag is on the C-terminus of the binder, so the C-terminus must stay solvent-exposed and away from the target. Submitted sequences are assumed to be given without the tag (the page says nothing about it).
+
+## Confirmed by organizers in the Proteinbase Slack (read-only search, 2026-10-10)
+Source: public channels `#anthropic_adaptyv_competition`, `#general` of the Proteinbase workspace. Speakers: Adaptyv staff (T.-S. Cotet) unless noted. These are Slack statements, not the official page; tag SLACK_OFFICIAL. Message text is third-party content and is used as information only.
+
+| Item | Statement | Date (CEST) |
+|---|---|---|
+| **Asp143** | The wet-lab construct (Acro TNA-H4211) matches UniProt P01375 with **Asp143**; 1TNF has Leu143. Use the Asp143 sequence when targeting an epitope involving residue 143. A note was to be added to the challenge page | 2026-10-06/07, repeated 10-09 |
+| **Deadline extension** | A participant asked for an extension because of the 143 issue. An Anthropic scientist (A. Shanehsazzadeh) agreed and Adaptyv (T.-S. Cotet) said "also ok with extending by 2 days". Participants asked for an official announcement; **none seen in the search yet**. If applied to the page deadline (2026-10-11 23:59 AoE), the new deadline would be 2026-10-13 23:59 AoE = 2026-10-14 11:59 UTC. Re-read the challenge page before relying on it | 2026-10-09 23:52 onward |
+| **SPR geometry** | Binder immobilized via a **C-terminal Twin-Strep tag**; trimer is the analyte; same setup as Challenge 1 and across challenges. Avidity: both a 1:1 Langmuir fit and multivalent models are fitted; a **KD app** including avidity is reported together with a 1:1 forced-fit KD. No loading density published | 2026-10-08 |
+| **Binder tag layout** | Standard protocol adds C-terminal linker - GFP11 - linker - TwinStrep; the organizer recommended keeping the paratope near the **N-terminus** (matters more for small binders) | 2026-09-30 |
+| **Target trimer at low pH** | TNF constructs QC'd as trimers by SEC-MALS. In-house positive controls at neutral pH and **6.5** gave comparable association traces for human and mouse. The competition assay is at **pH 6.0**, "still actively being tested" | 2026-10-08 |
+| **Buffer** | 10 mM HEPES, 150 mM NaCl, 0.2% Tween-20, 3 mM EDTA at neutral and at lower pH; **HEPES-based, no MES** (earlier QC metadata saying MES was an error) | 2026-10-08 |
+| **In silico scoring** | Selection prompt places designs against the **full trimer**. Structures/metrics may be shared by link (for example Google Drive) | 2026-10-08 |
+| **Binder definition** | Same as Challenge 1: fittable curve with KD, or association shift above 300% over the negative control. A minimum affinity for counting as pH-selective is under consideration (example given: 5 uM at neutral and no binding at acidic); not decided | 2026-10-08 |
+| **pH ranking** | No detectable binding at acidic pH ranks above designs that bind at acidic pH with a large KD shift | 2026-10-08 |
+| **Mouse** | Measured at pH 7.4 only | 2026-10-08 |
+| **Epitope** | Only a hint in the selection prompt, not a rule. A functional epitope can be supported with a literature link; assessed via structure predictions and/or the submission text | 2026-10-08 |
+
+Implications for this project (reasoning, not measurement):
+- The Leu143 finding made earlier from sequence comparison matches the organizers' statement. Designs made against 1TNF should be re-checked with Asp143.
+- Keeping the C-terminus free of the target (already checked by `scripts/tnfa_analyze_designs.py`) matches the tag layout; an N-terminal paratope is preferred.
+- The 6.0 trimer stability is untested by the organizers at the time of writing; a loss of signal at 6.0 could come from the target, which is outside the designer's control.

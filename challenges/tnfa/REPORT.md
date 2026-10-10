@@ -22,7 +22,7 @@ Target data, rules, the receptor-defined epitope and a BoltzGen design pipeline 
 
 ## Mistakes made along the way, and what they teach
 1. **A first epitope choice based only on geometry was wrong.** The SASA rule (P3) overlapped the real receptor site by 5 of 8 and 1 of 6 residues. Comparing with a receptor complex (7KP7) exposed it. Lesson: check any epitope heuristic against a structure of the real binding partner.
-2. **The crystal structure differs from the assay protein.** 1TNF has Leu143 where wild type has Asp143, and D143 is a receptor and adalimumab contact. Lesson: always align the structure sequence to the reference sequence before designing.
+2. **The crystal structure differs from the assay protein.** 1TNF has Leu143 where wild type has Asp143, and D143 is a receptor and adalimumab contact. The organizers later confirmed this in Slack (assay construct Acro TNA-H4211 = Asp143), and other teams reported having designed against Leu143 and needing rework. Lesson: always align the structure sequence to the reference sequence before designing.
 3. **Index conventions.** BoltzGen counts resolved residues (1TNF lacks residues 1-5), so mature number n is position n-5. Lesson: write a self-check that compares amino acids at every constrained position.
 4. **Model cache on Google Drive corrupted a zip** (`BadZipFile`). Hugging Face caches use symlinks that Drive does not support. Lesson: cache on local disk, keep results on Drive.
 5. **The notebook hid errors.** Output of a subprocess did not appear in the cell, so a 9 s failure showed no reason. Lesson: stream and log subprocess output.
