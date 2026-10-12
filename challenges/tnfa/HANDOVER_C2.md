@@ -27,3 +27,6 @@ and must be re-read from the official page.
 
 ## Update 2026-10-10
 Deadline: a 2-day extension was agreed in Slack by Anthropic and Adaptyv staff on 2026-10-09 (not yet seen as an official announcement). See `rules_and_assay.md`, section "Confirmed by organizers in the Proteinbase Slack". Slack is connected read-only for this project; nothing was posted.
+
+## Update 2026-10-12
+Official: TNFa now ends Sunday 2026-10-18 23:59 AoE (Slack #general, 2026-10-11 17:02 CEST). The earlier 2-day extension note above is superseded. See `rules_and_assay.md`.
