@@ -10,7 +10,7 @@ Tags: VERIFIED = read from the page or a downloaded file; COMPUTED = derived her
 | Recommended epitope | receptor-binding site between two protomers (also the adalimumab / infliximab site) | VERIFIED |
 | Human reference | UniProt P01375-1, residues 77-233 (157 aa), assay product TNA-H4211, tag-free | VERIFIED |
 | Structure reference | PDB 1TNF chains A-C (apo trimer) | VERIFIED |
-| Mouse construct | sequence NOT given on the page; carries a C-terminal polyhistidine tag. Page: 79% identical to human (124/156 aligned). Both constructs are trimers by SEC-MALS (human 45-62 kDa, mouse 50-65 kDa) | VERIFIED |
+| Mouse construct | (resolved by organizers on Slack 2026-10-11, see end of file: Acro TNA-M52H3, P06804 L80-L235) sequence NOT given on the page; carries a C-terminal polyhistidine tag. Page: 79% identical to human (124/156 aligned). Both constructs are trimers by SEC-MALS (human 45-62 kDa, mouse 50-65 kDa) | VERIFIED |
 | Mouse reference used here | UniProt P06804 residues 80-235 (`data/P06804_mouse.fasta`, mature domain starts `LRSSSQNSS`); 124/156 identical with 1 gap, matching the page's 79% | COMPUTED (the exact assay construct is NOT_STATED) |
 | Ranking (in order) | 1. binds human at pH 7.4 and NO detectable binding at pH 6.0; 2. also binds mouse (pH 7.4); 3. affinity to human | VERIFIED |
 | Assay | binding/affinity, human at pH 7.4 and pH 6.0, mouse at pH 7.4. Method, immobilization, buffer, concentration range: NOT_STATED | VERIFIED / NOT_STATED |
@@ -77,3 +77,6 @@ Implications for this project (reasoning, not measurement):
 Quote: "we're extending the timeline for all current and future challenges ... to 2 weeks. That means TNFa will end on Sunday, October 18th at 23:59 AoE." New challenges are still announced weekly, so challenges overlap. This supersedes the 2-day extension discussed on 2026-10-09 (UTC equivalent of the new deadline: 2026-10-19 11:59 UTC). SLACK_OFFICIAL; re-read the challenge page to confirm it shows the same date.
 
 Same day (17:35 CEST, same speaker, @channel): participants should NOT do their own wet-lab validation before submitting; running a screening campaign and submitting its hits is not allowed (the purpose is testing computational zero-shot de novo design).
+
+### Mouse construct confirmed (Slack #anthropic_adaptyv_competition, T.-S. Cotet, 2026-10-11 17:31 CEST, reply in a thread)
+Quote: "We'll use this construct [Acro TNA-M52H3], with AA Leu 80 - Leu 235 from P06804. PDB: 2TNF". SLACK_OFFICIAL. This matches the mouse reference already used in this project (UniProt P06804 residues 80-235, `data/P06804_mouse.fasta`), so the earlier NEEDS_REVIEW status of the mouse construct is resolved. Structure 2TNF is the organizers' pointer; it has not been downloaded or compared here.
