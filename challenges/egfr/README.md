@@ -167,7 +167,7 @@ run the local tests or the offline analysis scripts:
 
 ```bash
 git clone https://github.com/SyzenShen/adaptyv-binder-challenges.git
-cd adaptyv-binder-challenges
+cd adaptyv-binder-challenges/challenges/egfr
 python3 -m unittest discover -s tests -v   # zero third-party dependencies
 ```
 
