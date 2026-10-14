@@ -26,7 +26,7 @@
 | Homebrew | 7.0.6（`/usr/local/Homebrew`） | ✅ |
 | git | 2.50.1 (Apple Git-155)，`/usr/bin/git` | ✅ |
 | gh（GitHub CLI） | 2.87.3 | ⚠️ 已安装但**认证失效**，见 §4 |
-| git 全局身份 | name=`lvoryLexicon` / email=`shenyizhuozhanghaibo@gmail.com` | 本地 commit 使用；与 gh 账户 SyzenShen 的对应关系待本人确认 |
+| git 全局身份 | name=`lvoryLexicon` / email=`<redacted>` | 本地 commit 使用；与 gh 账户 SyzenShen 的对应关系待本人确认 |
 
 未做任何全局 Python/conda 修改；分析依赖仅计划安装到项目内 `.venv`（requirements-min.txt，阶段 1 前按需创建）。
 
