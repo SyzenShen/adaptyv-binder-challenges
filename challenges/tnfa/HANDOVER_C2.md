@@ -30,3 +30,6 @@ Deadline: a 2-day extension was agreed in Slack by Anthropic and Adaptyv staff o
 
 ## Update 2026-10-12
 Official: TNFa now ends Sunday 2026-10-18 23:59 AoE (Slack #general, 2026-10-11 17:02 CEST). The earlier 2-day extension note above is superseded. See `rules_and_assay.md`.
+
+## Update 2026-10-14
+The failing test `test_generator_rebuild_matches_committed_artifact` is fixed: the residue-map artifact now stores repository-relative paths instead of an absolute macOS path. EGFR suite: 169 tests, all pass, 1 skipped by design.

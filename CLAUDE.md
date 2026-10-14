@@ -8,4 +8,4 @@ Project: computational protein design for the Anthropic x Adaptyv challenges.
 - Residue mapping must key on chain/protomer instance; never assume chain A = target or a fixed offset.
 - Explanations to the user in Chinese; code, public methods and submission text in English.
 - Each big step: run targeted tests, commit only task files, push (no force), verify with `git ls-remote`. Push fails -> report LOCAL_ONLY.
-- Tests: `cd challenges/egfr && python3 -m unittest discover -s tests` (1 known path-dependent failure, see challenges/tnfa/HANDOVER_C2.md). TNF scripts live in `challenges/tnfa/scripts/` and run from any directory.
+- Tests: `cd challenges/egfr && python3 -m unittest discover -s tests` (all pass; 1 skipped by design. The former path-dependent failure was fixed on 2026-10-14). TNF scripts live in `challenges/tnfa/scripts/` and run from any directory.

@@ -35,7 +35,7 @@ The two challenges are self-contained and do not share conclusions.
 
 ## Reproducing
 - TNF-alpha, CPU only (needs `numpy`): see [`challenges/tnfa/README.md`](challenges/tnfa/README.md#reproduce).
-- EGFR tests (no third-party packages): `cd challenges/egfr && python3 -m unittest discover -s tests`. One test fails on any machine other than the author's because a committed file embeds an absolute path; this is known and not a science error.
+- EGFR tests (no third-party packages): `cd challenges/egfr && python3 -m unittest discover -s tests`. All 169 tests pass (1 is skipped by design).
 - GPU runs (Colab or a rented machine) are described in the TNF-alpha README.
 
 ## How this was made
