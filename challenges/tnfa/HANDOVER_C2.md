@@ -8,7 +8,7 @@ NOT_AVAILABLE = not reachable from this environment; NEEDS_REVIEW = conflicting 
 | Repo SyzenShen/egfr-binder-challenge (renamed 2026-10-08 to adaptyv-binder-challenges), main @ c4de97c, remote matches (`git ls-remote`) | VERIFIED | working tree clean at takeover |
 | Work branch `claude/funny-maxwell-mfws7z` | VERIFIED | created for Challenge 2 |
 | STATE/RUNBOOK/DECISIONS/HUMAN_ACTIONS/README exist; no CLAUDE.md before this commit | VERIFIED | |
-| Existing tests: 166 passed, 1 skipped, 1 failed (Python 3.13, fresh pip deps) | VERIFIED | failure `test_generator_rebuild_matches_committed_artifact`: committed `data/processed/target_residue_map.json` embeds an absolute macOS path (`/Users/shenyz/...`), so the rebuild differs on any other machine. Environment artifact, not a science error. Not fixed yet (low priority). |
+| Existing tests: 166 passed, 1 skipped, 1 failed (Python 3.13, fresh pip deps) | VERIFIED | failure `test_generator_rebuild_matches_committed_artifact`: committed `data/processed/target_residue_map.json` embedded an absolute macOS path, so the rebuild differed on any other machine. Environment artifact, not a science error. FIXED 2026-10-14 (see the update at the end of this file). |
 | BindCraft pin 7713aa0d..., patch `patches/bindcraft-7713aa0-relax-tolerance.patch` (per-model relax tolerance) | VERIFIED (files exist) | patch effect not re-run here |
 | EGFR smoke run, mpnn4 accepted, Drive artifacts under /content/drive/... | USER_REPORTED / NOT_AVAILABLE | repo docs mention `EGFR_D3_Bcons_l80_s313440_mpnn4` as an "Accepted is not the end" case; PDB/CSV/logs themselves are not in this checkout |
 | mpnn9 missing relaxed PDB; cause | NEEDS_REVIEW | not attributed to GPU quota without logs |
