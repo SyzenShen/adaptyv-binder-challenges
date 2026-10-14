@@ -23,6 +23,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _repo_rel(path):
+    """Path relative to this challenge folder, so the artifact does not embed anyone's absolute path.
+    Falls back to the plain string for files outside the folder (for example test temp files)."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
 CROP_PDB = ROOT / "data" / "processed" / "6ARU_chainA_domain3_310-481.pdb"
 RESIDUE_MAP_CSV = ROOT / "data" / "processed" / "residue_map.csv"
 DEFAULT_OUT = ROOT / "data" / "processed" / "target_residue_map.json"
@@ -123,10 +132,10 @@ def build(crop_pdb=CROP_PDB, csv_path=RESIDUE_MAP_CSV):
     return {
         "target_name": TARGET_NAME,
         "source_chain": SOURCE_CHAIN,
-        "source_pdb": str(crop_pdb),
+        "source_pdb": _repo_rel(crop_pdb),
         "source_pdb_sha256": sha256_file(crop_pdb),
         "cross_checked_against": {
-            "residue_map_csv": str(csv_path),
+            "residue_map_csv": _repo_rel(csv_path),
             "residue_map_csv_sha256": sha256_file(csv_path),
         },
         "numbering_note": (

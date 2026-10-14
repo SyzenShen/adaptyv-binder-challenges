@@ -1,10 +1,10 @@
 {
   "target_name": "human_EGFR_domainIII_310-481",
   "source_chain": "A",
-  "source_pdb": "/Users/shenyz/projects/github/egfr-binder-challenge/data/processed/6ARU_chainA_domain3_310-481.pdb",
+  "source_pdb": "data/processed/6ARU_chainA_domain3_310-481.pdb",
   "source_pdb_sha256": "32fbf2ee377fd21a250b675f8dbef0e95451d272edffa623a6185313a06c3904",
   "cross_checked_against": {
-    "residue_map_csv": "/Users/shenyz/projects/github/egfr-binder-challenge/data/processed/residue_map.csv",
+    "residue_map_csv": "data/processed/residue_map.csv",
     "residue_map_csv_sha256": "a82bb2a2f0177ab4d240c56221a00f0890a1314e6cbf968d74e5325082459031"
   },
   "numbering_note": "crop input PDB resseq == UniProt biological numbering (6ARU auth + 24, verified via residue_map.csv); BindCraft output renumbers the target chain 1..N. Analysis must translate output_local_index -> biological_number via this artifact; guessing a constant offset is forbidden.",
