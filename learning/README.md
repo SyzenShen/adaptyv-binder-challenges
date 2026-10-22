@@ -16,3 +16,4 @@ For each line of a file, mark: understood / roughly / no idea. The roughly/no-id
 ## Log
 | Date | What was done | What was predicted | What happened | What I learned |
 |---|---|---|---|---|
+| 2026-10-22 | numpy shapes: (3,) vs (1,3), indexing, broadcasting, `None` axes | A (3,3) right; B/C shapes wrong (thought (3,3) and (1,3), real (3,)); D guessed error, real: broadcast | Rule: right-align, each position equal or 1, size-1 stretches, both sides can stretch | `a[1]` drops a dimension, `a[1:2]` keeps it; `(N,1,3)-(1,M,3)` gives all pairs |
