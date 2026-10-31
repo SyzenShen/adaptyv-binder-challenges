@@ -13,6 +13,18 @@ Goal of this folder: understand, line by line, the code this project uses, well 
 For each line of a file, mark: understood / roughly / no idea. The roughly/no-idea lines are the syllabus.
 - [`00_diagnosis_tnfa_trimer_clash.md`](00_diagnosis_tnfa_trimer_clash.md): first worksheet (65 lines of numpy: broadcasting, centering, SVD, distances).
 
+## Progress (estimated by checkpoints, not hours)
+| Level | State |
+|---|---|
+| 0 diagnosis | worksheet created, not yet marked by the learner |
+| 1 tensors, shapes, autograd | shapes, indexing, broadcasting done; `norm(axis=)` in progress; autograd and training loop not started |
+| 2 attention | not started |
+| 3 protein language model | not started |
+| 4 fine-tuning | not started |
+| 5 change a design repo | not started |
+
+First file (`challenges/tnfa/scripts/tnfa_trimer_clash.py`): broadcasting for all-pairs differences understood; `norm(axis=2)` in progress; counting clashes, centering and the SVD superposition not yet covered.
+
 ## Log
 | Date | What was done | What was predicted | What happened | What I learned |
 |---|---|---|---|---|
