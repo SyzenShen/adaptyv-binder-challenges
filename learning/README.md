@@ -29,3 +29,5 @@ First file (`challenges/tnfa/scripts/tnfa_trimer_clash.py`): broadcasting for al
 | Date | What was done | What was predicted | What happened | What I learned |
 |---|---|---|---|---|
 | 2026-10-22 | numpy shapes: (3,) vs (1,3), indexing, broadcasting, `None` axes | A (3,3) right; B/C shapes wrong (thought (3,3) and (1,3), real (3,)); D guessed error, real: broadcast | Rule: right-align, each position equal or 1, size-1 stretches, both sides can stretch | `a[1]` drops a dimension, `a[1:2]` keeps it; `(N,1,3)-(1,M,3)` gives all pairs |
+| 2026-11-01 | `norm(axis=)` and what `None` placement means | dist shape (3,3) right; axis=0/1 predicted as vectors, real shape (3,3) | A named axis disappears; broadcasting aligns positions, not meaning; the merged axis must be the xyz axis | A wrong-but-running `None` placement is a silent bug; xyz can sit in the middle if `norm` uses that axis |
+
